@@ -12,8 +12,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class BookingDialog : CancelAndHelpDialog
     {
-        private const string DestinationStepMsgText = "Where would you like to travel to?";
-        private const string OriginStepMsgText = "Where are you traveling from?";
+        private const string DestinationStepMsgText = "Comment puis je vous aider? ";
+        private const string OriginStepMsgText = "Quel robot voulez vous que j'exécute ?";
 
         public BookingDialog()
             : base(nameof(BookingDialog))
@@ -82,7 +82,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             bookingDetails.TravelDate = (string)stepContext.Result;
 
-            var messageText = $"Please confirm, I have you traveling to: {bookingDetails.Destination} from: {bookingDetails.Origin} on: {bookingDetails.TravelDate}. Is this correct?";
+            var messageText = $"Pouvez vous confirmer votre demande ?: {bookingDetails.Destination} Nom du robot: {bookingDetails.Origin} le : {bookingDetails.TravelDate}. Est ce correct?";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
 
             return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
