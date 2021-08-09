@@ -13,7 +13,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class DateResolverDialog : CancelAndHelpDialog
     {
-        private const string PromptMsgText = "A quel moment voulez vous le lancer ? Format date mm/jj/aaaa ";
+        private const string PromptMsgText = "A quel moment voulez vous le lancer ? Format date jj/mm/aaaa ";
         private const string RepromptMsgText = "Je suis désolé mais le format de date est incorrect , veuillez saisir la date au format suivant jj/mm/aaaa.";
 
         public DateResolverDialog(string id = null)

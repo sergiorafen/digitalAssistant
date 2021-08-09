@@ -51,7 +51,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Use the text provided in FinalStepAsync or the default if it is the first time.
             var weekLaterDate = DateTime.Now.AddDays(7).ToString("MMMM d, yyyy");
-            var messageText = stepContext.Options?.ToString() ?? $"En quoi puis je vous aider?";
+            var messageText = stepContext.Options?.ToString() ?? $"En quoi puis je vous aider aujourd'hui?\nDites quelques choses comme \"Lancer un robot + Nom Entreprise\"";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
             return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
         }
@@ -85,7 +85,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 case FlightBooking.Intent.GetWeather:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    var getWeatherMessageText = "TODO: get weather flow here";
+                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra vous approchera dans les plus bref délais";
                     var getWeatherMessage = MessageFactory.Text(getWeatherMessageText, getWeatherMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(getWeatherMessage, cancellationToken);
                     break;
