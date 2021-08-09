@@ -6,10 +6,6 @@
       "features": []
     },
     {
-      "name": "Cancel",
-      "features": []
-    },
-    {
       "name": "GetWeather",
       "features": []
     },
@@ -113,21 +109,6 @@
       "entities": []
     },
     {
-      "text": "bye",
-      "intent": "Cancel",
-      "entities": []
-    },
-    {
-      "text": "cancel booking",
-      "intent": "Cancel",
-      "entities": []
-    },
-    {
-      "text": "exit",
-      "intent": "Cancel",
-      "entities": []
-    },
-    {
       "text": "find an airport near me",
       "intent": "None",
       "entities": []
@@ -140,11 +121,6 @@
     {
       "text": "i'd like to rent a car",
       "intent": "None",
-      "entities": []
-    },
-    {
-      "text": "ignore",
-      "intent": "Cancel",
       "entities": []
     },
     {
