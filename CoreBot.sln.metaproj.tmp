@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" InitialTargets="ValidateSolutionConfiguration;ValidateToolsVersions;ValidateProjects">
-  <Target Name="Rebuild" />
-  <Target Name="Restore" />
+  <Target Name="Publish" />
   <Target Name="Clean" />
   <Target Name="Build" />
-  <Target Name="Publish" />
+  <Target Name="Rebuild" />
+  <Target Name="Restore" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\SolutionFile\ImportBefore\*" Condition="'$(ImportByWildcardBeforeSolution)' != 'false' and exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\SolutionFile\ImportBefore')" />
   <PropertyGroup Condition="'$(ImportDirectorySolutionProps)' != 'false' and '$(DirectorySolutionPropsPath)' == ''">
     <_DirectorySolutionPropsFile Condition="'$(_DirectorySolutionPropsFile)' == ''">Directory.Solution.props</_DirectorySolutionPropsFile>

@@ -87,19 +87,19 @@
     <Warning Condition="('$(CurrentSolutionConfigurationContents)' == '') and ('$(SkipInvalidConfigurations)' == 'true')" HelpKeyword="MSBuild.SolutionInvalidSolutionConfiguration" Code="MSB4126" Text="The specified solution configuration &quot;$(Configuration)|$(Platform)&quot; is invalid. Please specify a valid solution configuration using the Configuration and Platform properties (e.g. MSBuild.exe Solution.sln /p:Configuration=Debug /p:Platform=&quot;Any CPU&quot;) or leave those properties blank to use the default solution configuration." />
     <Message Condition="'$(CurrentSolutionConfigurationContents)' != ''" Text="Building solution configuration &quot;$(Configuration)|$(Platform)&quot;." />
   </Target>
-  <Target Name="Restore" DependsOnTargets="_GenerateRestoreGraph">
-    <RemoveDuplicates Inputs="@(_RestoreGraphEntry)">
-      <Output TaskParameter="Filtered" ItemName="_RestoreGraphEntryFiltered" />
-    </RemoveDuplicates>
-    <RestoreTask RestoreForce="$(RestoreForce)" RestoreNoCache="$(RestoreNoCache)" RestoreGraphItems="@(_RestoreGraphEntryFiltered)" RestoreDisableParallel="$(RestoreDisableParallel)" HideWarningsAndErrors="$(HideWarningsAndErrors)" RestoreRecursive="$(RestoreRecursive)" RestoreForceEvaluate="$(RestoreForceEvaluate)" RestorePackagesConfig="$(RestorePackagesConfig)" Interactive="$(NuGetInteractive)" RestoreIgnoreFailedSources="$(RestoreIgnoreFailedSources)" />
-  </Target>
   <Target Name="ValidateToolsVersions">
     <Error Condition="'$(MSBuildToolsVersion)' == '2.0' and ('$(ProjectToolsVersion)' != '2.0' and '$(ProjectToolsVersion)' != '')" HelpKeyword="MSBuild.SolutionToolsVersionDoesNotSupportProjectToolsVersion" Code="MSB4149" Text="The tools version &quot;$(MSBuildToolsVersion)&quot; of the solution does not support building projects with a different tools version." />
   </Target>
   <Target Name="ValidateProjects" />
   <Target Name="GetSolutionConfigurationContents" Outputs="$(SolutionConfigurationContents)" />
+  <Target Name="Restore" DependsOnTargets="_GenerateRestoreGraph">
+    <RemoveDuplicates Inputs="@(_RestoreGraphEntry)">
+      <Output TaskParameter="Filtered" ItemName="_RestoreGraphEntryFiltered" />
+    </RemoveDuplicates>
+    <RestoreTask Interactive="$(NuGetInteractive)" HideWarningsAndErrors="$(HideWarningsAndErrors)" RestoreDisableParallel="$(RestoreDisableParallel)" RestoreForceEvaluate="$(RestoreForceEvaluate)" RestoreGraphItems="@(_RestoreGraphEntryFiltered)" RestoreRecursive="$(RestoreRecursive)" RestoreForce="$(RestoreForce)" RestoreNoCache="$(RestoreNoCache)" RestorePackagesConfig="$(RestorePackagesConfig)" RestoreIgnoreFailedSources="$(RestoreIgnoreFailedSources)" />
+  </Target>
   <Target Name="GetTargetFrameworkProperties" Returns="TargetFramework=$(NearestTargetFramework);ProjectHasSingleTargetFramework=$(_HasSingleTargetFramework);ProjectIsRidAgnostic=$(_IsRidAgnostic)">
-    <GetNearestTargetFramework Condition="'$(_SkipNearestTargetFrameworkResolution)' != 'true'" PossibleTargetFrameworks="$(_PossibleTargetFrameworks)" ProjectFilePath="$(MSBuildProjectFullPath)" ReferringTargetFramework="$(ReferringTargetFramework)">
+    <GetNearestTargetFramework Condition="'$(_SkipNearestTargetFrameworkResolution)' != 'true'" ProjectFilePath="$(MSBuildProjectFullPath)" PossibleTargetFrameworks="$(_PossibleTargetFrameworks)" ReferringTargetFramework="$(ReferringTargetFramework)">
       <Output TaskParameter="NearestTargetFramework" ItemName="NearestTargetFramework" />
     </GetNearestTargetFramework>
   </Target>
@@ -126,7 +126,7 @@
     <RemoveDuplicates Inputs="@(_FilteredRestoreGraphProjectInputItemsTmp)">
       <Output TaskParameter="Filtered" ItemName="FilteredRestoreGraphProjectInputItemsWithoutDuplicates" />
     </RemoveDuplicates>
-    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" Projects="@(FilteredRestoreGraphProjectInputItemsWithoutDuplicates)">
+    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(FilteredRestoreGraphProjectInputItemsWithoutDuplicates)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="FilteredRestoreGraphProjectInputItems" />
     </MSBuild>
     <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' != 'true' " ContinueOnError="$(RestoreContinueOnError)" Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(FilteredRestoreGraphProjectInputItemsWithoutDuplicates)">
@@ -135,21 +135,21 @@
     <WarnForInvalidProjectsTask Condition=" '$(DisableWarnForInvalidRestoreProjects)' != 'true' AND '$(HideWarningsAndErrors)' != 'true' " AllProjects="@(FilteredRestoreGraphProjectInputItemsWithoutDuplicates)" ValidProjects="@(FilteredRestoreGraphProjectInputItems)" />
   </Target>
   <Target Name="_GenerateRestoreGraph" DependsOnTargets="_FilterRestoreGraphProjectInputItems;_GetAllRestoreProjectPathItems" Returns="@(_RestoreGraphEntry)">
-    <Message Text="Generating dg file" Importance="low" />
-    <Message Text="%(_RestoreProjectPathItems.Identity)" Importance="low" />
-    <MSBuild Targets="_GenerateRestoreGraphProjectEntry" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" Projects="@(_GenerateRestoreGraphProjectEntryInput)">
+    <Message Importance="low" Text="Generating dg file" />
+    <Message Importance="low" Text="%(_RestoreProjectPathItems.Identity)" />
+    <MSBuild Targets="_GenerateRestoreGraphProjectEntry" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_GenerateRestoreGraphProjectEntryInput)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreGraphEntry" />
     </MSBuild>
-    <MSBuild Targets="_GenerateProjectRestoreGraph" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" Projects="@(_RestoreProjectPathItems)">
+    <MSBuild Targets="_GenerateProjectRestoreGraph" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_RestoreProjectPathItems)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreGraphEntry" />
     </MSBuild>
   </Target>
   <Target Name="_GenerateRestoreGraphProjectEntry" DependsOnTargets="_GenerateRestoreSpecs;_GenerateDotnetCliToolReferenceSpecs" Returns="@(_RestoreGraphEntry)" />
   <Target Name="_GenerateRestoreSpecs" DependsOnTargets="_GetRestoreProjectStyle" Returns="@(_RestoreGraphEntry)">
-    <Message Text="Restore entry point $(MSBuildProjectFullPath)" Importance="low" />
+    <Message Importance="low" Text="Restore entry point $(MSBuildProjectFullPath)" />
   </Target>
   <Target Name="_GenerateDotnetCliToolReferenceSpecs" DependsOnTargets="_GetRestoreSettings" Returns="@(_RestoreGraphEntry)">
-    <GetRestoreDotnetCliToolsTask Condition=" '$(RestoreDotnetCliToolReferences)' == '' OR '$(RestoreDotnetCliToolReferences)' == 'true' " RestorePackagesPath="$(_OutputPackagesPath)" ToolFramework="$(DotnetCliToolTargetFramework)" RestoreSources="$(_OutputSources)" DotnetCliToolReferences="@(DotnetCliToolReference)" RestoreConfigFilePaths="$(_OutputConfigFilePaths)" ProjectPath="$(MSBuildProjectFullPath)" RestoreFallbackFolders="$(_OutputFallbackFolders)">
+    <GetRestoreDotnetCliToolsTask Condition=" '$(RestoreDotnetCliToolReferences)' == '' OR '$(RestoreDotnetCliToolReferences)' == 'true' " ProjectPath="$(MSBuildProjectFullPath)" RestoreConfigFilePaths="$(_OutputConfigFilePaths)" ToolFramework="$(DotnetCliToolTargetFramework)" RestorePackagesPath="$(_OutputPackagesPath)" DotnetCliToolReferences="@(DotnetCliToolReference)" RestoreFallbackFolders="$(_OutputFallbackFolders)" RestoreSources="$(_OutputSources)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetRestoreDotnetCliToolsTask>
   </Target>
@@ -159,20 +159,20 @@
     </GetRestoreProjectJsonPathTask>
   </Target>
   <Target Name="_GetRestoreProjectStyle" DependsOnTargets="_GetProjectJsonPath;CollectPackageReferences" Returns="$(RestoreProjectStyle);$(PackageReferenceCompatibleProjectStyle)">
-    <GetRestoreProjectStyleTask RestoreProjectStyle="$(RestoreProjectStyle)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" HasPackageReferenceItems="$(_HasPackageReferenceItems)" ProjectJsonPath="$(_CurrentProjectJsonPath)" MSBuildProjectName="$(MSBuildProjectName)">
+    <GetRestoreProjectStyleTask HasPackageReferenceItems="$(_HasPackageReferenceItems)" ProjectJsonPath="$(_CurrentProjectJsonPath)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" RestoreProjectStyle="$(RestoreProjectStyle)" MSBuildProjectName="$(MSBuildProjectName)">
       <Output TaskParameter="ProjectStyle" ItemName="RestoreProjectStyle" />
       <Output TaskParameter="IsPackageReferenceCompatibleProjectStyle" ItemName="PackageReferenceCompatibleProjectStyle" />
     </GetRestoreProjectStyleTask>
   </Target>
   <Target Name="EnableIntermediateOutputPathMismatchWarning" Condition="'$(RestoreProjectStyle)' == 'PackageReference'" DependsOnTargets="_GetRestoreProjectStyle" />
   <Target Name="_GetRestoreTargetFrameworksOutput" DependsOnTargets="_GetRestoreProjectStyle" Returns="@(_RestoreTargetFrameworksOutputFiltered)">
-    <GetProjectTargetFrameworksTask Condition=" '$(RestoreProjectStyle)' != 'ProjectJson' OR '$(PackageReferenceCompatibleProjectStyle)' == 'true' " TargetFramework="$(TargetFramework)" TargetFrameworks="$(TargetFrameworks)" TargetFrameworkMoniker="$(TargetFrameworkMoniker)" ProjectPath="$(MSBuildProjectFullPath)" TargetPlatformMinVersion="$(TargetPlatformMinVersion)" TargetPlatformIdentifier="$(TargetPlatformIdentifier)" TargetPlatformVersion="$(TargetPlatformVersion)">
+    <GetProjectTargetFrameworksTask Condition=" '$(RestoreProjectStyle)' != 'ProjectJson' OR '$(PackageReferenceCompatibleProjectStyle)' == 'true' " TargetPlatformIdentifier="$(TargetPlatformIdentifier)" ProjectPath="$(MSBuildProjectFullPath)" TargetPlatformVersion="$(TargetPlatformVersion)" TargetFrameworkMoniker="$(TargetFrameworkMoniker)" TargetPlatformMinVersion="$(TargetPlatformMinVersion)" TargetFramework="$(TargetFramework)" TargetFrameworks="$(TargetFrameworks)">
       <Output TaskParameter="ProjectTargetFrameworks" ItemName="_RestoreProjectFramework" />
     </GetProjectTargetFrameworksTask>
   </Target>
   <Target Name="_GetRestoreTargetFrameworksAsItems" DependsOnTargets="_GetRestoreProjectStyle" Returns="@(_RestoreTargetFrameworkItems)" />
   <Target Name="_GetRestoreSettings" Condition=" '$(RestoreProjectStyle)' == 'PackageReference' OR '$(RestoreProjectStyle)' == 'ProjectJson' OR '$(RestoreProjectStyle)' == 'DotnetToolReference' OR '$(RestoreProjectStyle)' == 'PackagesConfig'" DependsOnTargets="_GetRestoreSettingsOverrides;_GetRestoreSettingsCurrentProject;_GetRestoreSettingsAllFrameworks" Returns="$(_OutputSources);$(_OutputPackagesPath);$(_OutputRepositoryPath);$(_OutputFallbackFolders);$(_OutputConfigFilePaths)">
-    <GetRestoreSettingsTask RestoreRepositoryPath="$(RestoreRepositoryPath)" RestoreProjectStyle="$(RestoreProjectStyle)" RestorePackagesPathOverride="$(_RestorePackagesPathOverride)" RestorePackagesPath="$(RestorePackagesPath)" ProjectUniqueName="$(MSBuildProjectFullPath)" RestoreConfigFile="$(RestoreConfigFile)" RestoreSourcesOverride="$(_RestoreSourcesOverride)" RestoreRootConfigDirectory="$(RestoreRootConfigDirectory)" RestoreSolutionDirectory="$(RestoreSolutionDirectory)" RestoreRepositoryPathOverride="$(_RestoreRepositoryPathOverride)" RestoreSources="$(RestoreSources)" RestoreSettingsPerFramework="@(_RestoreSettingsPerFramework)" RestoreFallbackFoldersOverride="$(_RestoreFallbackFoldersOverride)" RestoreFallbackFolders="$(RestoreFallbackFolders)" MSBuildStartupDirectory="$(MSBuildStartupDirectory)">
+    <GetRestoreSettingsTask RestoreConfigFile="$(RestoreConfigFile)" RestoreRootConfigDirectory="$(RestoreRootConfigDirectory)" RestoreSettingsPerFramework="@(_RestoreSettingsPerFramework)" RestorePackagesPathOverride="$(_RestorePackagesPathOverride)" ProjectUniqueName="$(MSBuildProjectFullPath)" RestorePackagesPath="$(RestorePackagesPath)" RestoreRepositoryPath="$(RestoreRepositoryPath)" RestoreSolutionDirectory="$(RestoreSolutionDirectory)" MSBuildStartupDirectory="$(MSBuildStartupDirectory)" RestoreFallbackFoldersOverride="$(_RestoreFallbackFoldersOverride)" RestoreSourcesOverride="$(_RestoreSourcesOverride)" RestoreRepositoryPathOverride="$(_RestoreRepositoryPathOverride)" RestoreProjectStyle="$(RestoreProjectStyle)" RestoreFallbackFolders="$(RestoreFallbackFolders)" RestoreSources="$(RestoreSources)">
       <Output TaskParameter="OutputSources" ItemName="_OutputSources" />
       <Output TaskParameter="OutputPackagesPath" ItemName="_OutputPackagesPath" />
       <Output TaskParameter="OutputRepositoryPath" ItemName="_OutputRepositoryPath" />
@@ -182,7 +182,7 @@
   </Target>
   <Target Name="_GetRestoreSettingsCurrentProject" Condition=" '$(TargetFrameworks)' == '' AND '$(PackageReferenceCompatibleProjectStyle)' == 'true' " DependsOnTargets="_GetRestoreSettingsPerFramework" Returns="@(_RestoreSettingsPerFramework)" />
   <Target Name="_GetRestoreSettingsAllFrameworks" Condition=" '$(TargetFrameworks)' != '' AND '$(PackageReferenceCompatibleProjectStyle)' == 'true' " DependsOnTargets="_GetRestoreTargetFrameworksAsItems;_GetRestoreProjectStyle" Returns="@(_RestoreSettingsPerFramework)">
-    <MSBuild Targets="_GetRestoreSettingsPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildProjectFullPath)">
+    <MSBuild Targets="_GetRestoreSettingsPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="$(MSBuildProjectFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreSettingsPerFramework" />
     </MSBuild>
   </Target>
@@ -195,25 +195,25 @@
   <Target Name="_GenerateProjectRestoreGraph" DependsOnTargets="&#xD;&#xA;      _GetRestoreProjectStyle;&#xD;&#xA;      _GenerateRestoreProjectSpec;&#xD;&#xA;      _GenerateRestoreDependencies" Returns="@(_RestoreGraphEntry)" />
   <Target Name="_GenerateRestoreDependencies" DependsOnTargets="_GenerateProjectRestoreGraphAllFrameworks;_GenerateProjectRestoreGraphCurrentProject" Returns="@(_RestoreGraphEntry)" />
   <Target Name="_GenerateProjectRestoreGraphAllFrameworks" Condition=" '$(TargetFrameworks)' != '' " DependsOnTargets="_GetRestoreTargetFrameworksAsItems" Returns="@(_RestoreGraphEntry)">
-    <MSBuild Targets="_GenerateProjectRestoreGraphPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildProjectFullPath)">
+    <MSBuild Targets="_GenerateProjectRestoreGraphPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="$(MSBuildProjectFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreGraphEntry" />
     </MSBuild>
   </Target>
   <Target Name="_GenerateProjectRestoreGraphCurrentProject" Condition=" '$(TargetFrameworks)' == '' " DependsOnTargets="_GenerateProjectRestoreGraphPerFramework" Returns="@(_RestoreGraphEntry)" />
   <Target Name="_GenerateProjectRestoreGraphPerFramework" DependsOnTargets="_GetRestoreProjectStyle;CollectPackageReferences;CollectPackageDownloads;CollectFrameworkReferences;CollectCentralPackageVersions" Returns="@(_RestoreGraphEntry)">
-    <GetRestoreProjectReferencesTask ParentProjectPath="$(MSBuildProjectFullPath)" ProjectUniqueName="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)" ProjectReferences="@(ProjectReference)">
+    <GetRestoreProjectReferencesTask ProjectUniqueName="$(MSBuildProjectFullPath)" ParentProjectPath="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)" ProjectReferences="@(ProjectReference)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetRestoreProjectReferencesTask>
-    <GetRestorePackageReferencesTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)" PackageReferences="@(PackageReference)">
+    <GetRestorePackageReferencesTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" PackageReferences="@(PackageReference)" TargetFrameworks="$(TargetFramework)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetRestorePackageReferencesTask>
-    <GetCentralPackageVersionsTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' AND '$(_CentralPackageVersionsEnabled)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)" CentralPackageVersions="@(PackageVersion)">
+    <GetCentralPackageVersionsTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' AND '$(_CentralPackageVersionsEnabled)' == 'true' " CentralPackageVersions="@(PackageVersion)" ProjectUniqueName="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetCentralPackageVersionsTask>
     <GetRestorePackageDownloadsTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" PackageDownloads="@(PackageDownload)" TargetFrameworks="$(TargetFramework)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetRestorePackageDownloadsTask>
-    <GetRestoreFrameworkReferencesTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" TargetFrameworks="$(TargetFramework)" FrameworkReferences="@(FrameworkReference)">
+    <GetRestoreFrameworkReferencesTask Condition=" '$(PackageReferenceCompatibleProjectStyle)' == 'true' " ProjectUniqueName="$(MSBuildProjectFullPath)" FrameworkReferences="@(FrameworkReference)" TargetFrameworks="$(TargetFramework)">
       <Output TaskParameter="RestoreGraphItems" ItemName="_RestoreGraphEntry" />
     </GetRestoreFrameworkReferencesTask>
   </Target>
@@ -229,7 +229,7 @@
     </RemoveDuplicates>
   </Target>
   <Target Name="_GenerateRestoreProjectPathItemsAllFrameworks" Condition=" '$(TargetFrameworks)' != '' " DependsOnTargets="_GetRestoreTargetFrameworksAsItems" Returns="@(_RestoreProjectPathItems)">
-    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " SkipNonexistentProjects="true" Targets="_GenerateRestoreProjectPathItemsPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" Projects="$(MSBuildProjectFullPath)">
+    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_GenerateRestoreProjectPathItemsPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="$(MSBuildProjectFullPath)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" SkipNonexistentProjects="true">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreProjectPathItems" />
     </MSBuild>
     <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' != 'true' " ContinueOnError="$(RestoreContinueOnError)" Targets="_GenerateRestoreProjectPathItemsPerFramework" Properties="TargetFramework=%(_RestoreTargetFrameworkItems.Identity);&#xD;&#xA;                  $(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="$(MSBuildProjectFullPath)">
@@ -237,7 +237,7 @@
     </MSBuild>
   </Target>
   <Target Name="_GenerateRestoreProjectPathWalk" DependsOnTargets="_GenerateRestoreProjectPathItems" Returns="@(_RestoreProjectPathItems)">
-    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " SkipNonexistentProjects="true" Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" Projects="@(_CurrentRestoreProjectPathItems)">
+    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_CurrentRestoreProjectPathItems)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" SkipNonexistentProjects="true">
       <Output TaskParameter="TargetOutputs" ItemName="_GenerateRestoreProjectPathWalkOutputs" />
     </MSBuild>
     <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' != 'true' " ContinueOnError="$(RestoreContinueOnError)" Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_CurrentRestoreProjectPathItems)">
@@ -248,8 +248,8 @@
     </RemoveDuplicates>
   </Target>
   <Target Name="_GetAllRestoreProjectPathItems" DependsOnTargets="_FilterRestoreGraphProjectInputItems" Returns="@(_RestoreProjectPathItems)">
-    <NuGetMessageTask Name="DeterminingProjectsToRestore" Importance="High" />
-    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " SkipNonexistentProjects="true" Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" Projects="@(FilteredRestoreGraphProjectInputItems)">
+    <NuGetMessageTask Importance="High" Name="DeterminingProjectsToRestore" />
+    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(FilteredRestoreGraphProjectInputItems)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" SkipNonexistentProjects="true">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreProjectPathItemsOutputs" />
     </MSBuild>
     <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' != 'true' " ContinueOnError="$(RestoreContinueOnError)" Targets="_GenerateRestoreProjectPathWalk" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(FilteredRestoreGraphProjectInputItems)">
@@ -258,7 +258,7 @@
     <RemoveDuplicates Inputs="@(_RestoreProjectPathItemsOutputs)">
       <Output TaskParameter="Filtered" ItemName="_RestoreProjectPathItemsWithoutDupes" />
     </RemoveDuplicates>
-    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " SkipNonexistentProjects="true" Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" Projects="@(_RestoreProjectPathItemsWithoutDupes)">
+    <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' == 'true' " Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_RestoreProjectPathItemsWithoutDupes)" BuildInParallel="$(RestoreBuildInParallel)" SkipNonexistentTargets="true" SkipNonexistentProjects="true">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreProjectPathItems" />
     </MSBuild>
     <MSBuild Condition=" '$(RestoreUseSkipNonexistentTargets)' != 'true' " ContinueOnError="$(RestoreContinueOnError)" Targets="_IsProjectRestoreSupported" Properties="$(_GenerateRestoreGraphProjectEntryInputProperties)" Projects="@(_RestoreProjectPathItemsWithoutDupes)">
@@ -266,16 +266,16 @@
     </MSBuild>
   </Target>
   <Target Name="_GetRestoreSettingsOverrides" Returns="$(_RestorePackagesPathOverride);$(_RestoreRepositoryPathOverride);$(_RestoreSourcesOverride);$(_RestoreFallbackFoldersOverride)">
-    <MSBuild Condition=" '$(RestorePackagesPath)' != '' " Targets="_GetRestorePackagesPathOverride" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildThisFileFullPath)">
+    <MSBuild Condition=" '$(RestorePackagesPath)' != '' " Targets="_GetRestorePackagesPathOverride" Projects="$(MSBuildThisFileFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestorePackagesPathOverride" />
     </MSBuild>
-    <MSBuild Condition=" '$(RestoreRepositoryPathOverride)' != '' " Targets="_GetRestoreRepositoryPathOverride" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildThisFileFullPath)">
+    <MSBuild Condition=" '$(RestoreRepositoryPathOverride)' != '' " Targets="_GetRestoreRepositoryPathOverride" Projects="$(MSBuildThisFileFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreRepositoryPathOverride" />
     </MSBuild>
-    <MSBuild Condition=" '$(RestoreSources)' != '' " Targets="_GetRestoreSourcesOverride" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildThisFileFullPath)">
+    <MSBuild Condition=" '$(RestoreSources)' != '' " Targets="_GetRestoreSourcesOverride" Projects="$(MSBuildThisFileFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreSourcesOverride" />
     </MSBuild>
-    <MSBuild Condition=" '$(RestoreFallbackFolders)' != '' " Targets="_GetRestoreFallbackFoldersOverride" BuildInParallel="$(RestoreBuildInParallel)" Projects="$(MSBuildThisFileFullPath)">
+    <MSBuild Condition=" '$(RestoreFallbackFolders)' != '' " Targets="_GetRestoreFallbackFoldersOverride" Projects="$(MSBuildThisFileFullPath)" BuildInParallel="$(RestoreBuildInParallel)">
       <Output TaskParameter="TargetOutputs" ItemName="_RestoreFallbackFoldersOverride" />
     </MSBuild>
   </Target>
@@ -285,35 +285,35 @@
   <Target Name="_GetRestoreFallbackFoldersOverride" Returns="$(_RestoreFallbackFoldersOverride)" />
   <Target Name="_IsProjectRestoreSupported" Returns="@(_ValidProjectsForRestore)" />
   <Target Name="Build" Outputs="@(CollectedBuildOutput)">
-    <MSBuild SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)">
+    <MSBuild Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)">
       <Output TaskParameter="TargetOutputs" ItemName="CollectedBuildOutput" />
     </MSBuild>
   </Target>
   <Target Name="Clean">
-    <MSBuild SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" Targets="Clean" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference-&gt;Reverse())" />
+    <MSBuild Targets="Clean" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference-&gt;Reverse())" BuildInParallel="True" SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" />
   </Target>
   <Target Name="Rebuild" Outputs="@(CollectedBuildOutput)">
-    <MSBuild SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" Targets="Rebuild" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)">
+    <MSBuild Targets="Rebuild" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)">
       <Output TaskParameter="TargetOutputs" ItemName="CollectedBuildOutput" />
     </MSBuild>
   </Target>
   <Target Name="Publish">
-    <MSBuild SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" Targets="Publish" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)" />
+    <MSBuild Targets="Publish" Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" />
   </Target>
   <Target Name="CoreBot" Outputs="@(CoreBotBuildOutput)">
-    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)" ToolsVersion="$(ProjectToolsVersion)">
+    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" ToolsVersion="$(ProjectToolsVersion)">
       <Output TaskParameter="TargetOutputs" ItemName="CoreBotBuildOutput" />
     </MSBuild>
   </Target>
   <Target Name="CoreBot:Clean">
-    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Clean" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)" ToolsVersion="$(ProjectToolsVersion)" />
+    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Clean" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" ToolsVersion="$(ProjectToolsVersion)" />
   </Target>
   <Target Name="CoreBot:Rebuild" Outputs="@(CoreBotBuildOutput)">
-    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Rebuild" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)" ToolsVersion="$(ProjectToolsVersion)">
+    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Rebuild" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" ToolsVersion="$(ProjectToolsVersion)">
       <Output TaskParameter="TargetOutputs" ItemName="CoreBotBuildOutput" />
     </MSBuild>
   </Target>
   <Target Name="CoreBot:Publish">
-    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Publish" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" BuildInParallel="True" Projects="@(ProjectReference)" ToolsVersion="$(ProjectToolsVersion)" />
+    <MSBuild Condition="'%(ProjectReference.Identity)' == 'C:\__w\1\s\BotAppTemplates\CSharp-ABS-WebApp-V4\Basic\CoreBot.csproj'" Targets="Publish" Properties="Configuration=Debug; Platform=AnyCPU;BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)" Projects="@(ProjectReference)" BuildInParallel="True" ToolsVersion="$(ProjectToolsVersion)" />
   </Target>
 </Project>
