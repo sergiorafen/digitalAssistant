@@ -51,7 +51,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Use the text provided in FinalStepAsync or the default if it is the first time.
             var weekLaterDate = DateTime.Now.AddDays(7).ToString("MMMM d, yyyy");
-            var messageText = stepContext.Options?.ToString() ?? $"Bonjour";
+            var messageText = stepContext.Options?.ToString() ?? $"Bonjour Sergio";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
             return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
         }
