@@ -10,13 +10,13 @@ using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 
 namespace Microsoft.BotBuilderSamples.Dialogs
 {
-    public class BookingDialog : CancelAndHelpDialog
+    public class LaunchingBotDialog : CancelAndHelpDialog
     {
         private const string DestinationStepMsgText = "Comment puis je vous aider? ";
         private const string OriginStepMsgText = "Quel robot voulez vous que j'exécute ?";
 
-        public BookingDialog()
-            : base(nameof(BookingDialog))
+        public LaunchingBotDialog()
+            : base(nameof(LaunchingBotDialog))
         {
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
@@ -36,7 +36,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> DestinationStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (BookingDetails)stepContext.Options;
+            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
 
             if (bookingDetails.Destination == null)
             {
@@ -49,7 +49,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> OriginStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (BookingDetails)stepContext.Options;
+            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
 
             bookingDetails.Destination = (string)stepContext.Result;
 
@@ -64,7 +64,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> TravelDateStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (BookingDetails)stepContext.Options;
+            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
 
             bookingDetails.Origin = (string)stepContext.Result;
 
@@ -78,7 +78,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (BookingDetails)stepContext.Options;
+            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
 
             bookingDetails.TravelDate = (string)stepContext.Result;
 
@@ -92,7 +92,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         {
             if ((bool)stepContext.Result)
             {
-                var bookingDetails = (BookingDetails)stepContext.Options;
+                var bookingDetails = (LaunchingBotDetails)stepContext.Options;
 
                 return await stepContext.EndDialogAsync(bookingDetails, cancellationToken);
             }

@@ -3,7 +3,7 @@
 
 namespace Microsoft.BotBuilderSamples
 {
-    public class BookingDetails
+    public class LaunchingBotDetails
     {
         public string Destination { get; set; }
 

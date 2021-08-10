@@ -6,7 +6,7 @@ using System.Linq;
 namespace Microsoft.BotBuilderSamples
 {
     // Extends the partial FlightBooking class with methods and properties that simplify accessing entities in the luis results
-    public partial class FlightBooking
+    public partial class ChatBotLaunching
     {
         public (string From, string Airport) FromEntities
         {

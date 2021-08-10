@@ -16,11 +16,11 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private readonly FlightBookingRecognizer _luisRecognizer;
+        private readonly ChatbotRecognizer _luisRecognizer;
         protected readonly ILogger Logger;
 
         // Dependency injection uses this constructor to instantiate MainDialog
-        public MainDialog(FlightBookingRecognizer luisRecognizer, BookingDialog bookingDialog, ILogger<MainDialog> logger)
+        public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, ILogger<MainDialog> logger)
             : base(nameof(MainDialog))
         {
             _luisRecognizer = luisRecognizer;
@@ -61,18 +61,18 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             if (!_luisRecognizer.IsConfigured)
             {
                 // LUIS is not configured, we just run the BookingDialog path with an empty BookingDetailsInstance.
-                return await stepContext.BeginDialogAsync(nameof(BookingDialog), new BookingDetails(), cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), new LaunchingBotDetails(), cancellationToken);
             }
 
             // Call LUIS and gather any potential booking details. (Note the TurnContext has the response to the prompt.)
-            var luisResult = await _luisRecognizer.RecognizeAsync<FlightBooking>(stepContext.Context, cancellationToken);
+            var luisResult = await _luisRecognizer.RecognizeAsync<ChatBotLaunching>(stepContext.Context, cancellationToken);
             switch (luisResult.TopIntent().intent)
             {
-                case FlightBooking.Intent.BookFlight:
+                case ChatBotLaunching.Intent.BookFlight:
                     await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
 
                     // Initialize BookingDetails with any entities we may have found in the response.
-                    var bookingDetails = new BookingDetails()
+                    var bookingDetails = new LaunchingBotDetails()
                     {
                         // Get destination and origin from the composite entities arrays.
                         Destination = luisResult.ToEntities.Airport,
@@ -81,11 +81,11 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     };
 
                     // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
-                    return await stepContext.BeginDialogAsync(nameof(BookingDialog), bookingDetails, cancellationToken);
+                    return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), bookingDetails, cancellationToken);
 
-                case FlightBooking.Intent.GetWeather:
+                case ChatBotLaunching.Intent.GetWeather:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra vous approchera dans les plus bref délais";
+                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra viendra pour vous aider dans les plus brefs délais";
                     var getWeatherMessage = MessageFactory.Text(getWeatherMessageText, getWeatherMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(getWeatherMessage, cancellationToken);
                     break;
@@ -104,7 +104,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         // Shows a warning if the requested From or To cities are recognized as entities but they are not in the Airport entity list.
         // In some cases LUIS will recognize the From and To composite entities as a valid cities but the From and To Airport values
         // will be empty if those entity values can't be mapped to a canonical item in the Airport.
-        private static async Task ShowWarningForUnsupportedCities(ITurnContext context, FlightBooking luisResult, CancellationToken cancellationToken)
+        private static async Task ShowWarningForUnsupportedCities(ITurnContext context, ChatBotLaunching luisResult, CancellationToken cancellationToken)
         {
             var unsupportedCities = new List<string>();
 
@@ -132,7 +132,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         {
             // If the child dialog ("BookingDialog") was cancelled, the user failed to confirm or if the intent wasn't BookFlight
             // the Result here will be null.
-            if (stepContext.Result is BookingDetails result)
+            if (stepContext.Result is LaunchingBotDetails result)
             {
                 // Now we have all the booking details call the booking service.
 

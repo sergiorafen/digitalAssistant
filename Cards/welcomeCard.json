@@ -21,7 +21,7 @@
       "type": "TextBlock",
       "size": "default",
       "isSubtle": true,
-      "text": "Je suis votre chatbot Alphedra ",
+      "text": "Je suis votre assistant virtuel Alphedra ",
       "wrap": true,
       "maxLines": 0
     }
