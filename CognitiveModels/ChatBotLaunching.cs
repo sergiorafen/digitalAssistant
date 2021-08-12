@@ -16,9 +16,11 @@ namespace Microsoft.BotBuilderSamples
         public string Text;
         public string AlteredText;
         public enum Intent {
-            BookFlight,
+            Salutation,
+            Todorobot,
             Cancel,
-            GetWeather,
+            Aide,
+            Information,
             None
         };
         public Dictionary<Intent, IntentScore> Intents;

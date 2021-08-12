@@ -51,7 +51,15 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Use the text provided in FinalStepAsync or the default if it is the first time.
             var weekLaterDate = DateTime.Now.AddDays(7).ToString("MMMM d, yyyy");
-            var messageText = stepContext.Options?.ToString() ?? $"En quoi puis je vous aider aujourd'hui?\nDites quelques choses comme \"Lancer un robot + Nom Entreprise\"";
+            var messageText = stepContext.Options?.ToString() ?? $"Je peux vous aider :\r\n" +
+                $"- pour lancer un robot \r\n" +
+                $"- vous donner des informations par rapport à votre robot \r\n" +
+                $"- vous mettre en relation avec un consultant Alphedra \r\n" +
+                $"" +
+                $"Je vous écoute ?";
+
+
+
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
             return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
         }
@@ -68,7 +76,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             var luisResult = await _luisRecognizer.RecognizeAsync<ChatBotLaunching>(stepContext.Context, cancellationToken);
             switch (luisResult.TopIntent().intent)
             {
-                case ChatBotLaunching.Intent.BookFlight:
+                case ChatBotLaunching.Intent.Todorobot:
                     await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
 
                     // Initialize BookingDetails with any entities we may have found in the response.
@@ -83,16 +91,23 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
                     return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), bookingDetails, cancellationToken);
 
-                case ChatBotLaunching.Intent.GetWeather:
+                case ChatBotLaunching.Intent.Aide:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra viendra pour vous aider dans les plus brefs délais";
+                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra viendra pour vous aider dans les plus brefs délais ,\r\n , Vous pouvez également nous contacter par email : email@alphedra.com, ou par téléphone au + 33 (0) 6 27 12 36 64  ";
                     var getWeatherMessage = MessageFactory.Text(getWeatherMessageText, getWeatherMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(getWeatherMessage, cancellationToken);
                     break;
 
+                case ChatBotLaunching.Intent.Information:
+                    // We haven't implemented the GetWeatherDialog so we just display a TODO message.
+                    var getInformationMessageText = "Voici les informations que vous avez demandé :\r\n Nom: {Robot.Name},\r\n lancé le 11/08/2021 12:30,\r\n son statut:En cours";
+                    var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
+                    await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);
+                    break;
+
                 default:
                     // Catch all for unhandled intents
-                    var didntUnderstandMessageText = $"Désolé je n'ai pas compris. Pourriez vous reformler votre demande ? (intent was {luisResult.TopIntent().intent})";
+                    var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ? (intent was {luisResult.TopIntent().intent})";
                     var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
                     break;
@@ -140,7 +155,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 var timeProperty = new TimexProperty(result.TravelDate);
                 var travelDateMsg = timeProperty.ToNaturalLanguage(DateTime.Now);
-                var messageText = $"Votre demande suivante : {result.Destination} pour le robot  {result.Origin} le {travelDateMsg} a bien été enregistré";
+                var messageText = $"Votre demande suivante :\r\n {result.Destination} \r\n pour le robot  {result.Origin} \r\n le {travelDateMsg} a bien été enregistré";
                 var message = MessageFactory.Text(messageText, messageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(message, cancellationToken);
             }

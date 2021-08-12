@@ -12,7 +12,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class LaunchingBotDialog : CancelAndHelpDialog
     {
-        private const string DestinationStepMsgText = "Comment puis je vous aider? ";
+        private const string DestinationStepMsgText = "Voulez vous vraiment lancer un robot? ";
         private const string OriginStepMsgText = "Quel robot voulez vous que j'exécute ?";
 
         public LaunchingBotDialog()
@@ -36,53 +36,53 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> DestinationStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            if (bookingDetails.Destination == null)
+            if (LaunchingBotDetails.Destination == null)
             {
                 var promptMessage = MessageFactory.Text(DestinationStepMsgText, DestinationStepMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-            return await stepContext.NextAsync(bookingDetails.Destination, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.Destination, cancellationToken);
         }
 
         private async Task<DialogTurnResult> OriginStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            bookingDetails.Destination = (string)stepContext.Result;
+            LaunchingBotDetails.Destination = (string)stepContext.Result;
 
-            if (bookingDetails.Origin == null)
+            if (LaunchingBotDetails.Origin == null)
             {
                 var promptMessage = MessageFactory.Text(OriginStepMsgText, OriginStepMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-            return await stepContext.NextAsync(bookingDetails.Origin, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.Origin, cancellationToken);
         }
 
         private async Task<DialogTurnResult> TravelDateStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            bookingDetails.Origin = (string)stepContext.Result;
+            LaunchingBotDetails.Origin = (string)stepContext.Result;
 
-            if (bookingDetails.TravelDate == null || IsAmbiguous(bookingDetails.TravelDate))
+            if (LaunchingBotDetails.TravelDate == null || IsAmbiguous(LaunchingBotDetails.TravelDate))
             {
-                return await stepContext.BeginDialogAsync(nameof(DateResolverDialog), bookingDetails.TravelDate, cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(DateResolverDialog), LaunchingBotDetails.TravelDate, cancellationToken);
             }
 
-            return await stepContext.NextAsync(bookingDetails.TravelDate, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.TravelDate, cancellationToken);
         }
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var bookingDetails = (LaunchingBotDetails)stepContext.Options;
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            bookingDetails.TravelDate = (string)stepContext.Result;
+            LaunchingBotDetails.TravelDate = (string)stepContext.Result;
 
-            var messageText = $"Pouvez vous confirmer votre demande ?: {bookingDetails.Destination} Nom du robot: {bookingDetails.Origin} le : {bookingDetails.TravelDate}. Est ce correct?";
+            var messageText = $"Pouvez vous confirmer votre demande ?:\r\n {LaunchingBotDetails.Destination} \r\n Nom du robot: {LaunchingBotDetails.Origin} \r\n le : {LaunchingBotDetails.TravelDate}. Est ce correct?";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
 
             return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
@@ -92,9 +92,9 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         {
             if ((bool)stepContext.Result)
             {
-                var bookingDetails = (LaunchingBotDetails)stepContext.Options;
+                var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-                return await stepContext.EndDialogAsync(bookingDetails, cancellationToken);
+                return await stepContext.EndDialogAsync(LaunchingBotDetails, cancellationToken);
             }
 
             return await stepContext.EndDialogAsync(null, cancellationToken);
@@ -107,3 +107,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         }
     }
 }
+
+  
+                    
