@@ -12,8 +12,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class LaunchingBotDialog : CancelAndHelpDialog
     {
-        private const string DestinationStepMsgText = "Voulez vous vraiment lancer un robot? ";
-        private const string OriginStepMsgText = "Quel robot voulez vous que j'exécute ?";
+        private const string RobotNameStepMsgText = "Voulez vous vraiment lancer un robot? ";
+        private const string RequeteClientStepMsgText = "Quel robot voulez vous que j'exécute ?";
 
         public LaunchingBotDialog()
             : base(nameof(LaunchingBotDialog))
@@ -23,9 +23,9 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             AddDialog(new DateResolverDialog());
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
-                DestinationStepAsync,
-                OriginStepAsync,
-                TravelDateStepAsync,
+                RobotNameStepAsync,
+                RequeteClientStepAsync,
+                DateDemandeStepAsync,
                 ConfirmStepAsync,
                 FinalStepAsync,
             }));
@@ -34,55 +34,55 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             InitialDialogId = nameof(WaterfallDialog);
         }
 
-        private async Task<DialogTurnResult> DestinationStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> RobotNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            if (LaunchingBotDetails.Destination == null)
+            if (LaunchingBotDetails.RobotName == null)
             {
-                var promptMessage = MessageFactory.Text(DestinationStepMsgText, DestinationStepMsgText, InputHints.ExpectingInput);
+                var promptMessage = MessageFactory.Text(RobotNameStepMsgText, RobotNameStepMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-            return await stepContext.NextAsync(LaunchingBotDetails.Destination, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.RobotName, cancellationToken);
         }
 
-        private async Task<DialogTurnResult> OriginStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> RequeteClientStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            LaunchingBotDetails.Destination = (string)stepContext.Result;
+            LaunchingBotDetails.RobotName = (string)stepContext.Result;
 
-            if (LaunchingBotDetails.Origin == null)
+            if (LaunchingBotDetails.RequeteClient == null)
             {
-                var promptMessage = MessageFactory.Text(OriginStepMsgText, OriginStepMsgText, InputHints.ExpectingInput);
+                var promptMessage = MessageFactory.Text(RequeteClientStepMsgText, RequeteClientStepMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-            return await stepContext.NextAsync(LaunchingBotDetails.Origin, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.RequeteClient, cancellationToken);
         }
 
-        private async Task<DialogTurnResult> TravelDateStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> DateDemandeStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            LaunchingBotDetails.Origin = (string)stepContext.Result;
+            LaunchingBotDetails.RequeteClient = (string)stepContext.Result;
 
-            if (LaunchingBotDetails.TravelDate == null || IsAmbiguous(LaunchingBotDetails.TravelDate))
+            if (LaunchingBotDetails.DateDemande == null || IsAmbiguous(LaunchingBotDetails.DateDemande))
             {
-                return await stepContext.BeginDialogAsync(nameof(DateResolverDialog), LaunchingBotDetails.TravelDate, cancellationToken);
+                return await stepContext.BeginDialogAsync(nameof(DateResolverDialog), LaunchingBotDetails.DateDemande, cancellationToken);
             }
 
-            return await stepContext.NextAsync(LaunchingBotDetails.TravelDate, cancellationToken);
+            return await stepContext.NextAsync(LaunchingBotDetails.DateDemande, cancellationToken);
         }
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            LaunchingBotDetails.TravelDate = (string)stepContext.Result;
+            LaunchingBotDetails.DateDemande = (string)stepContext.Result;
 
-            var messageText = $"Pouvez vous confirmer votre demande ?:\r\n {LaunchingBotDetails.Destination} \r\n Nom du robot: {LaunchingBotDetails.Origin} \r\n le : {LaunchingBotDetails.TravelDate}. Est ce correct?";
+            var messageText = $"Pouvez vous confirmer votre demande ?:\r\n {LaunchingBotDetails.RobotName} \r\n Nom du robot: {LaunchingBotDetails.RequeteClient} \r\n le : {LaunchingBotDetails.DateDemande}. Est ce correct?";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
 
             return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);

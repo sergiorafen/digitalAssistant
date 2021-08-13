@@ -11,6 +11,8 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
+using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace Microsoft.BotBuilderSamples.Dialogs
 {
@@ -68,7 +70,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         {
             if (!_luisRecognizer.IsConfigured)
             {
-                // LUIS is not configured, we just run the BookingDialog path with an empty BookingDetailsInstance.
+                // LUIS is not configured, we just run the BookingDialog path with an empty LaunchingBotDetailsInstance.
                 return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), new LaunchingBotDetails(), cancellationToken);
             }
 
@@ -79,17 +81,17 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 case ChatBotLaunching.Intent.Todorobot:
                     await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
 
-                    // Initialize BookingDetails with any entities we may have found in the response.
-                    var bookingDetails = new LaunchingBotDetails()
+                    // Initialize LaunchingBotDetails with any entities we may have found in the response.
+                    var LaunchingBotDetails = new LaunchingBotDetails()
                     {
-                        // Get destination and origin from the composite entities arrays.
-                        Destination = luisResult.ToEntities.Airport,
-                        Origin = luisResult.FromEntities.Airport,
-                        TravelDate = luisResult.TravelDate,
+                        // Get RobotName and RequeteClient from the composite entities arrays.
+                        RobotName = luisResult.ToEntities.Airport,
+                        RequeteClient = luisResult.FromEntities.Airport,
+                        DateDemande = luisResult.TravelDate,
                     };
 
                     // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
-                    return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), bookingDetails, cancellationToken);
+                    return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), LaunchingBotDetails, cancellationToken);
 
                 case ChatBotLaunching.Intent.Aide:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
@@ -100,7 +102,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 case ChatBotLaunching.Intent.Information:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    var getInformationMessageText = "Voici les informations que vous avez demandé :\r\n Nom: {Robot.Name},\r\n lancé le 11/08/2021 12:30,\r\n son statut:En cours";
+                    //var getInformationMessageText = "Voici les informations que vous avez demandé :\r\n Nom: {Robot.Name},\r\n lancé le 11/08/2021 12:30,\r\n son statut:En cours";
+                    var getInformationMessageText = getData("Clartan VNI66");
                     var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);
                     break;
@@ -153,16 +156,94 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 // If the call to the booking service was successful tell the user.
 
-                var timeProperty = new TimexProperty(result.TravelDate);
+                var timeProperty = new TimexProperty(result.DateDemande);
                 var travelDateMsg = timeProperty.ToNaturalLanguage(DateTime.Now);
-                var messageText = $"Votre demande suivante :\r\n {result.Destination} \r\n pour le robot  {result.Origin} \r\n le {travelDateMsg} a bien été enregistré";
+                var messageText = $"Votre demande suivante :\r\n {result.RobotName} \r\n pour le robot  {result.RobotName} \r\n le {travelDateMsg} a bien été enregistré";
                 var message = MessageFactory.Text(messageText, messageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(message, cancellationToken);
+                InsertData(result.RequeteClient);
             }
 
             // Restart the main dialog with a different message the second time around
             var promptMessage = "Que puis je faire d'autre pour vous?";
             return await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessage, cancellationToken);
         }
+
+        public void InsertData(string robot)
+        {
+            string result = "init";
+            DateTime now = DateTime.Now;
+            try
+            {
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+                builder.DataSource = "212.114.16.130";
+                builder.UserID = "chatbotdev";
+                builder.Password = "384E7nV#2!mPzA";
+                builder.InitialCatalog = "ALPHEDRA_DB";
+
+                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
+                {
+
+                    String sql = "insert into [ALPHEDRA_DB].[dbo].[Chatbot_Robot_Client] (Client,Robot,Date_Demande)  values (@Client,@Robot,@Date_Demande)";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Client", "Clartan");
+                        command.Parameters.AddWithValue("@Robot", robot);
+                        command.Parameters.AddWithValue("@Date_Demande", now);
+                        connection.Open();
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                result = e.ToString();
+            }
+        }
+
+        public string getData(string robot)
+        {
+            string robotName, robotDevice,result;
+            result = "init";
+            try
+            {
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+                builder.DataSource = "212.114.16.130";
+                builder.UserID = "chatbotdev";
+                builder.Password = "384E7nV#2!mPzA";
+                builder.InitialCatalog = "ALPHEDRA_DB";
+
+                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
+                {
+                    String sql = "SELECT Robot,Device,Login,Password FROM [ALPHEDRA_DB].[dbo].[Chatbot_Robot] WHERE Robot=@Robot";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        connection.Open();
+                        command.Parameters.AddWithValue("@Robot", robot);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
+                                robotName = reader.GetString(0);
+                                robotDevice = reader.GetString(1);
+                                result = "Voici les informations que vous avez demandé :\r\n Nom:" + robotName + " ,\r\n lancé sur le device " + robotDevice + ",\r\n son statut:En cours";
+
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                result = e.ToString();
+            }
+            return result;
+        }
+
+
     }
 }
