@@ -101,11 +101,14 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     break;
 
                 case ChatBotLaunching.Intent.Information:
-                    // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    //var getInformationMessageText = "Voici les informations que vous avez demandé :\r\n Nom: {Robot.Name},\r\n lancé le 11/08/2021 12:30,\r\n son statut:En cours";
-                    var getInformationMessageText = getData("Clartan VNI66");
+                    await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
+
+                    /*var getInformationMessageText = getData("Clartan VNI66");
                     var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
-                    await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);
+
+                    await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);*/
+                    var InfoBotDetails = new LaunchingBotDetails();
+
                     break;
 
                 default:
