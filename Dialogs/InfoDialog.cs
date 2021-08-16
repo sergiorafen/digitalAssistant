@@ -32,7 +32,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             {
                 ConfirmInfoStepAsync,
                 RobotNameStepAsync,
-                DeviceRobotStepAsync,
                 FinalStepAsync,
             }));
 
@@ -82,7 +81,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             return await stepContext.NextAsync(InfoBotDetails.RobotName, cancellationToken);
         }
 
-        private async Task<DialogTurnResult> DeviceRobotStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        /*private async Task<DialogTurnResult> DeviceRobotStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var InfoBotDetails = (InfoBotDetails)stepContext.Options;
 
@@ -96,7 +95,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             return await stepContext.NextAsync(InfoBotDetails.DeviceRobot, cancellationToken);
         }
-
+            */
        /* private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var InfoBotDetails = (InfoBotDetails)stepContext.Options;
@@ -112,9 +111,10 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var InfoBotDetails = (InfoBotDetails)stepContext.Options;
+            InfoBotDetails.RobotName = (string)stepContext.Result;
 
             /*vaInfoBotDetails.RobotName = (string)stepContext.Result;*/
-            if(InfoBotDetails.RobotName != null)
+            if (InfoBotDetails.RobotName != null)
             {
                 string myRobot = InfoBotDetails.RobotName;
                 var infoRobotMessageText = getData(myRobot);
