@@ -16,9 +16,11 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class InfoDialog : CancelAndHelpDialog
     {
-        private const string ConfirmrRequestStepMsgText = "Voulez vous vraiment une information sur un robot? ";
+        private const string ConfirmrRequestStepMsgText = "Voulez vous vraiment une information sur un robot? (Taper oui ou non)";
         private const string RobotNameStepMsgText = "Quel est le nom du robot dont vous voulez avoir des informations ?";
         private const string RobotDeviceStepMsgText = "Sur quel ordinateur le robot est il lancé?";
+        private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
+
 
         public InfoDialog()
             : base(nameof(InfoDialog))
@@ -32,7 +34,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 RobotNameStepAsync,
                 DeviceRobotStepAsync,
                 FinalStepAsync,
-            })); ;
+            }));
 
             // The initial child Dialog to run.
             InitialDialogId = nameof(WaterfallDialog);
@@ -48,7 +50,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-
             return await stepContext.NextAsync(InfoBotDetails.ConfirmationFirstInfo, cancellationToken);
         }
 
@@ -58,10 +59,24 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             InfoBotDetails.ConfirmationFirstInfo = (string)stepContext.Result;
 
-            if (InfoBotDetails.RobotName == null)
+            if (InfoBotDetails.ConfirmationFirstInfo == "oui")
             {
-                var promptMessage = MessageFactory.Text(RobotNameStepMsgText, RobotNameStepMsgText, InputHints.ExpectingInput);
-                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                if (InfoBotDetails.RobotName == null)
+                {
+                    var promptMessage = MessageFactory.Text(RobotNameStepMsgText, RobotNameStepMsgText, InputHints.ExpectingInput);
+                    return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                }
+            }
+            else if (InfoBotDetails.ConfirmationFirstInfo == "non")
+            {
+                return await stepContext.EndDialogAsync();
+            }
+            else
+            {
+                var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+
+                return await stepContext.EndDialogAsync();
             }
 
             return await stepContext.NextAsync(InfoBotDetails.RobotName, cancellationToken);
@@ -82,7 +97,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             return await stepContext.NextAsync(InfoBotDetails.DeviceRobot, cancellationToken);
         }
 
-        /*private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+       /* private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var InfoBotDetails = (InfoBotDetails)stepContext.Options;
 
@@ -118,7 +133,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         public string getData(string robot)
         {
-            string robotName, robotDevice, result;
+            string robotName, robotDevice,robotstatut,robotdescription,result;
             result = "init";
             try
             {
@@ -130,7 +145,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
                 {
-                    String sql = "SELECT Robot,Device,Login,Password FROM [ALPHEDRA_DB].[dbo].[Chatbot_Robot] WHERE Robot=@Robot";
+                    String sql = "select A.ID_Robot,B.Robot,A.Device,A.Statut,A.Desciption from [ALPHEDRA_DB].[dbo].[Chatbot_Historique_Des_Taches] as A inner join [ALPHEDRA_DB].[dbo].[Chatbot_Robot] as B on A.ID_Robot=B.ID_Robot where B.Robot=@Robot";
 
                     using (SqlCommand command = new SqlCommand(sql, connection))
                     {
@@ -142,9 +157,11 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                             while (reader.Read())
                             {
                                 //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
-                                robotName = reader.GetString(0);
-                                robotDevice = reader.GetString(1);
-                                result = "Voici les informations que vous avez demandé :\r\n Nom:" + robotName + " ,\r\n lancé sur le device " + robotDevice + ",\r\n son statut:En cours";
+                                robotName = reader.GetString(1);
+                                robotDevice = reader.GetString(2);
+                                robotstatut = reader.GetString(3);
+                                robotdescription = reader.GetString(4);
+                                result = "Voici les informations que vous avez demandé :\r\n Nom:" + robotName + " ,\r\n lancé sur le device " + robotDevice + ",\r\n son statut:"+robotstatut+ ",\r\n description:" + robotdescription;
 
                             }
                         }

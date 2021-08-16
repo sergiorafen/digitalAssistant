@@ -83,6 +83,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 case ChatBotLaunching.Intent.Todorobot:
                     await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
 
+
+
                     // Initialize LaunchingBotDetails with any entities we may have found in the response.
                     var LaunchingBotDetails = new LaunchingBotDetails()
                     {
@@ -166,12 +168,13 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
                 // If the call to the booking service was successful tell the user.
 
-                var timeProperty = new TimexProperty(result.DateDemande);
-                var travelDateMsg = timeProperty.ToNaturalLanguage(DateTime.Now);
-                var messageText = $"Votre demande suivante :\r\n {result.RobotName} \r\n pour le robot  {result.RobotName} \r\n le {travelDateMsg} a bien été enregistré";
+
+                /*var timeProperty = new TimexProperty(result.DateDemande);
+                var travelDateMsg = timeProperty.ToNaturalLanguage(DateTime.Now);*/
+                var messageText = $"Votre demande de lancer le robot  {result.RobotName} \r\n a bien été enregistré";
                 var message = MessageFactory.Text(messageText, messageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(message, cancellationToken);
-                InsertData(result.RequeteClient);
+                InsertData(result.RobotName);
             }
 
             // Restart the main dialog with a different message the second time around

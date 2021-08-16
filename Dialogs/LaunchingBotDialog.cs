@@ -12,8 +12,10 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class LaunchingBotDialog : CancelAndHelpDialog
     {
-        private const string RobotNameStepMsgText = "Voulez vous vraiment lancer un robot? ";
+        private const string ConfirmFirstStepMsgText = "Voulez vous vraiment lancer un robot? ";
         private const string RequeteClientStepMsgText = "Quel robot voulez vous que j'exécute ?";
+        private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
+        private const string DeviceRobotMessageText = "Sur quel ordinateur voulez vous le lancer?";
 
         public LaunchingBotDialog()
             : base(nameof(LaunchingBotDialog))
@@ -23,9 +25,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             AddDialog(new DateResolverDialog());
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
-                RobotNameStepAsync,
+                ConfirmFirstStepAsync,
                 RequeteClientStepAsync,
-                DateDemandeStepAsync,
                 ConfirmStepAsync,
                 FinalStepAsync,
             }));
@@ -34,13 +35,13 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             InitialDialogId = nameof(WaterfallDialog);
         }
 
-        private async Task<DialogTurnResult> RobotNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> ConfirmFirstStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            if (LaunchingBotDetails.RobotName == null)
+            if (LaunchingBotDetails.ConfirmationFirstInfo == null)
             {
-                var promptMessage = MessageFactory.Text(RobotNameStepMsgText, RobotNameStepMsgText, InputHints.ExpectingInput);
+                var promptMessage = MessageFactory.Text(ConfirmFirstStepMsgText, ConfirmFirstStepMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
@@ -50,19 +51,47 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         private async Task<DialogTurnResult> RequeteClientStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
+            LaunchingBotDetails.ConfirmationFirstInfo = (string)stepContext.Result;
+
+            if (LaunchingBotDetails.ConfirmationFirstInfo == "oui")
+            {
+                if (LaunchingBotDetails.RobotName == null)
+                {
+                    var promptMessage = MessageFactory.Text(RequeteClientStepMsgText, RequeteClientStepMsgText, InputHints.ExpectingInput);
+                    return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                }
+            }
+            else if (LaunchingBotDetails.ConfirmationFirstInfo == "non")
+            {
+                return await stepContext.EndDialogAsync();
+            }
+            else
+            {
+                var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+
+                return await stepContext.EndDialogAsync();
+            }
+
+            return await stepContext.NextAsync(LaunchingBotDetails.RobotName, cancellationToken);
+        }
+
+      /*  private async Task<DialogTurnResult> DeviceRobotStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
             LaunchingBotDetails.RobotName = (string)stepContext.Result;
 
-            if (LaunchingBotDetails.RequeteClient == null)
+            if (LaunchingBotDetails.DeviceRobot == null)
             {
-                var promptMessage = MessageFactory.Text(RequeteClientStepMsgText, RequeteClientStepMsgText, InputHints.ExpectingInput);
+                var promptMessage = MessageFactory.Text(DeviceRobotMessageText, DeviceRobotMessageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 
-            return await stepContext.NextAsync(LaunchingBotDetails.RequeteClient, cancellationToken);
-        }
+            return await stepContext.NextAsync(LaunchingBotDetails.DeviceRobot, cancellationToken);
+        }*/
 
-        private async Task<DialogTurnResult> DateDemandeStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        /*private async Task<DialogTurnResult> DateDemandeStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
@@ -74,15 +103,15 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             }
 
             return await stepContext.NextAsync(LaunchingBotDetails.DateDemande, cancellationToken);
-        }
+        }*/
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
 
-            LaunchingBotDetails.DateDemande = (string)stepContext.Result;
+            LaunchingBotDetails.RobotName = (string)stepContext.Result;
 
-            var messageText = $"Pouvez vous confirmer votre demande ?:\r\n {LaunchingBotDetails.RobotName} \r\n Nom du robot: {LaunchingBotDetails.RequeteClient} \r\n le : {LaunchingBotDetails.DateDemande}. Est ce correct?";
+            var messageText = $"Pouvez vous confirmer votre demande ?: \r\n lancer le robot: {LaunchingBotDetails.RobotName}. Est ce correct?";
             var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
 
             return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
