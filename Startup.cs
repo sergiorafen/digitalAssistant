@@ -44,6 +44,9 @@ namespace Microsoft.BotBuilderSamples
             // Register the BookingDialog.
             services.AddSingleton<LaunchingBotDialog>();
 
+            // Register the BookingDialog.
+            services.AddSingleton<InfoDialog>();
+
             // The MainDialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
 

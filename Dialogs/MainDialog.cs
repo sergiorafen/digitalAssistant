@@ -22,7 +22,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         protected readonly ILogger Logger;
 
         // Dependency injection uses this constructor to instantiate MainDialog
-        public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, ILogger<MainDialog> logger)
+        public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, InfoDialog informationDialog ,ILogger<MainDialog> logger)
             : base(nameof(MainDialog))
         {
             _luisRecognizer = luisRecognizer;
@@ -30,6 +30,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(bookingDialog);
+            AddDialog(informationDialog);
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
                 IntroStepAsync,
@@ -76,6 +77,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Call LUIS and gather any potential booking details. (Note the TurnContext has the response to the prompt.)
             var luisResult = await _luisRecognizer.RecognizeAsync<ChatBotLaunching>(stepContext.Context, cancellationToken);
+
             switch (luisResult.TopIntent().intent)
             {
                 case ChatBotLaunching.Intent.Todorobot:
@@ -107,9 +109,14 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
 
                     await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);*/
-                    var InfoBotDetails = new LaunchingBotDetails();
-
-                    break;
+                    var InfoBotDetails = new InfoBotDetails()
+                    {
+                        // Get RobotName and RequeteClient from the composite entities arrays.
+                        RobotName = luisResult.ToEntities.Airport,
+                        DeviceRobot = luisResult.FromEntities.Airport,
+                        StatutRobot = luisResult.TravelDate,
+                    };
+                    return await stepContext.BeginDialogAsync(nameof(InfoDialog), InfoBotDetails, cancellationToken);
 
                 default:
                     // Catch all for unhandled intents
@@ -204,49 +211,5 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 result = e.ToString();
             }
         }
-
-        public string getData(string robot)
-        {
-            string robotName, robotDevice,result;
-            result = "init";
-            try
-            {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = "212.114.16.130";
-                builder.UserID = "chatbotdev";
-                builder.Password = "384E7nV#2!mPzA";
-                builder.InitialCatalog = "ALPHEDRA_DB";
-
-                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-                {
-                    String sql = "SELECT Robot,Device,Login,Password FROM [ALPHEDRA_DB].[dbo].[Chatbot_Robot] WHERE Robot=@Robot";
-
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        connection.Open();
-                        command.Parameters.AddWithValue("@Robot", robot);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
-                                robotName = reader.GetString(0);
-                                robotDevice = reader.GetString(1);
-                                result = "Voici les informations que vous avez demandé :\r\n Nom:" + robotName + " ,\r\n lancé sur le device " + robotDevice + ",\r\n son statut:En cours";
-
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException e)
-            {
-                result = e.ToString();
-            }
-            return result;
-        }
-
-
     }
 }

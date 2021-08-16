@@ -1,5 +1,4 @@
 ﻿
-
 namespace Microsoft.BotBuilderSamples
 {
     public class InfoBotDetails
@@ -7,5 +6,8 @@ namespace Microsoft.BotBuilderSamples
         public string RobotName { get; set; }
         public string DeviceRobot { get; set; }
         public string StatutRobot { get; set; }
+
+        public string ConfirmationFirstInfo { get; set; }
+
     }
 }
