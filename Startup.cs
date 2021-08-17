@@ -20,10 +20,10 @@ namespace Microsoft.BotBuilderSamples
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers().AddNewtonsoftJson();
-
+            services.AddHttpClient().AddControllers().AddNewtonsoftJson();
             //Maj partie connexion
             string uri = "https://api.botframework.azure.us";
-            MicrosoftAppCredentials.TrustServiceUrl(uri);
+            AppCredentials.TrustServiceUrl(uri);
             OAuthClientConfig.OAuthEndpoint = uri;
 
             // Create the Bot Framework Adapter with error handling enabled.
@@ -51,7 +51,10 @@ namespace Microsoft.BotBuilderSamples
             services.AddSingleton<MainDialog>();
 
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
-            services.AddTransient<IBot, DialogAndWelcomeBot<MainDialog>>();
+            services.AddTransient<IBot, AuthBot<MainDialog>>();
+
+            // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
+            /*services.AddTransient<IBot, DialogAndWelcomeBot<MainDialog>>();*/
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

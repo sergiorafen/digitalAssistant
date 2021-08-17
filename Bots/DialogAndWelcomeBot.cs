@@ -13,8 +13,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.BotBuilderSamples.Bots
 {
-    public class DialogAndWelcomeBot<T> : DialogBot<T>
-        where T : Dialog
+    public class DialogAndWelcomeBot<T> : DialogBot<T> where T : Dialog
     {
         public DialogAndWelcomeBot(ConversationState conversationState, UserState userState, T dialog, ILogger<DialogBot<T>> logger)
             : base(conversationState, userState, dialog, logger)

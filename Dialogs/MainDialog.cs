@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 using Microsoft.Data.SqlClient;
@@ -16,23 +17,36 @@ using System.Text;
 
 namespace Microsoft.BotBuilderSamples.Dialogs
 {
-    public class MainDialog : ComponentDialog
+    public class MainDialog : LogoutDialog
     {
         private readonly ChatbotRecognizer _luisRecognizer;
         protected readonly ILogger Logger;
 
         // Dependency injection uses this constructor to instantiate MainDialog
-        public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, InfoDialog informationDialog ,ILogger<MainDialog> logger)
-            : base(nameof(MainDialog))
+        public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, InfoDialog informationDialog , IConfiguration configuration,ILogger<MainDialog> logger)
+            : base(nameof(MainDialog), configuration["ConnectionName"])
         {
             _luisRecognizer = luisRecognizer;
             Logger = logger;
 
+            AddDialog(new OAuthPrompt(
+                nameof(OAuthPrompt),
+                new OAuthPromptSettings
+                {
+                    ConnectionName = ConnectionName,
+                    Text = "Please login",
+                    Title = "Login",
+                    Timeout = 300000, // User has 5 minutes to login
+                }));
+
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(bookingDialog);
             AddDialog(informationDialog);
+            AddDialog(new ChoicePrompt(nameof(ChoicePrompt)));
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
+                PromptStepAsync,
+                LoginStepAsync,
                 IntroStepAsync,
                 ActStepAsync,
                 FinalStepAsync,
@@ -213,6 +227,64 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             {
                 result = e.ToString();
             }
+        }
+        private async Task<DialogTurnResult> PromptStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            return await stepContext.BeginDialogAsync(nameof(OAuthPrompt), null, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> LoginStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var tokenResponse = (TokenResponse)stepContext.Result;
+            if (tokenResponse != null)
+            {
+                await OAuthHelpers.ListMeAsync(stepContext.Context, tokenResponse);
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("You are now logged in."), cancellationToken);
+                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("Would you like to do? (type 'me', or 'email')") }, cancellationToken);
+            }
+
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text("Login was not successful please try again."), cancellationToken);
+            return await stepContext.EndDialogAsync();
+        }
+
+        private async Task<DialogTurnResult> CommandStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            stepContext.Values["command"] = stepContext.Result;
+            return await stepContext.BeginDialogAsync(nameof(OAuthPrompt), null, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> ProcessStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            if (stepContext.Result != null)
+            {
+
+                var tokenResponse = stepContext.Result as TokenResponse;
+
+                // If we have the token use the user is authenticated so we may use it to make API calls.
+                if (tokenResponse?.Token != null)
+                {
+                    var command = ((string)stepContext.Values["command"] ?? string.Empty).Trim().ToLowerInvariant();
+
+                    if (command == "me")
+                    {
+                        await OAuthHelpers.ListMeAsync(stepContext.Context, tokenResponse);
+                    }
+                    else if (command.StartsWith("email"))
+                    {
+                        await OAuthHelpers.ListEmailAddressAsync(stepContext.Context, tokenResponse);
+                    }
+                    else
+                    {
+                        await stepContext.Context.SendActivityAsync(MessageFactory.Text($"Your token is: {tokenResponse.Token}"), cancellationToken);
+                    }
+                }
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("We couldn't log you in. Please try again later."), cancellationToken);
+            }
+
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
     }
 }
