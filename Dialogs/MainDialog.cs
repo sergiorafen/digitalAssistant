@@ -170,7 +170,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     
                 default:
                     // Catch all for unhandled intents
-                    var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ? (intent was {luisResult.TopIntent().intent})";
+                    var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
                     var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
                     break;

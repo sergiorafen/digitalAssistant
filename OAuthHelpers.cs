@@ -19,7 +19,7 @@ namespace Microsoft.BotBuilderSamples
         public static async Task ListMeAsync(ITurnContext turnContext, TokenResponse tokenResponse)
         {
             var user = await GetUserAsync(turnContext, tokenResponse);
-            await turnContext.SendActivityAsync($"Bonjour {user.DisplayName}.");
+            await turnContext.SendActivityAsync($"Connecté en tant que {user.DisplayName}.");
         }
 
         // Send the user their Graph Email Address from the bot.
