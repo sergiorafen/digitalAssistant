@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 using Microsoft.Data.SqlClient;
 using System.Text;
+using Microsoft.Graph;
 
 namespace Microsoft.BotBuilderSamples.Dialogs
 {
@@ -28,14 +29,17 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         {
             _luisRecognizer = luisRecognizer;
             Logger = logger;
+            string textLogin = "Pour pouvoir utiliser ce chatbot, vous devez être connecté";
+            string titleLogin = "Se connecter";
+
 
             AddDialog(new OAuthPrompt(
                 nameof(OAuthPrompt),
                 new OAuthPromptSettings
                 {
                     ConnectionName = ConnectionName,
-                    Text = "Please login",
-                    Title = "Login",
+                    Text = textLogin,
+                    Title = titleLogin,
                     Timeout = 300000, // User has 5 minutes to login
                 }));
 
@@ -46,7 +50,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
                 PromptStepAsync,
-                LoginStepAsync,
                 IntroStepAsync,
                 ActStepAsync,
                 FinalStepAsync,
@@ -66,19 +69,26 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 return await stepContext.NextAsync(null, cancellationToken);
             }
 
-            // Use the text provided in FinalStepAsync or the default if it is the first time.
-            var weekLaterDate = DateTime.Now.AddDays(7).ToString("MMMM d, yyyy");
-            var messageText = stepContext.Options?.ToString() ?? $"Je peux vous aider :\r\n" +
-                $"- pour lancer un robot \r\n" +
-                $"- vous donner des informations par rapport à votre robot \r\n" +
-                $"- vous mettre en relation avec un consultant Alphedra \r\n" +
-                $"" +
-                $"Je vous écoute ?";
+            //Check token
+            var tokenResponse = (TokenResponse)stepContext.Result;
 
+            if (tokenResponse != null)
+            {
+                // Use the text provided in FinalStepAsync or the default if it is the first time.
+                var weekLaterDate = DateTime.Now.AddDays(7).ToString("MMMM d, yyyy");
+                await OAuthHelpers.ListMeAsync(stepContext.Context, tokenResponse);
+                var messageText = stepContext.Options?.ToString() ?? $"Je peux vous aider :\r\n" +
+                    $"- pour lancer un robot \r\n" +
+                    $"- vous donner des informations par rapport à votre robot \r\n" +
+                    $"- vous mettre en relation avec un consultant Alphedra \r\n" +
+                    $"" +
+                    $"Je vous écoute ?";
+                var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+            }
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text("Login was not successful please try again."), cancellationToken);
+            return await stepContext.EndDialogAsync();
 
-
-            var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-            return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
         }
 
         private async Task<DialogTurnResult> ActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -91,6 +101,10 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Call LUIS and gather any potential booking details. (Note the TurnContext has the response to the prompt.)
             var luisResult = await _luisRecognizer.RecognizeAsync<ChatBotLaunching>(stepContext.Context, cancellationToken);
+            ChatBotLaunching verifClient = new ChatBotLaunching();
+            string nameClient = "nameClient";
+            string promptMessageRessource = "promptMessageRessource";
+
 
             switch (luisResult.TopIntent().intent)
             {
@@ -109,7 +123,17 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     };
 
                     // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
-                    return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), LaunchingBotDetails, cancellationToken);
+                    nameClient = verifClient.verifUser("sergio.rafenomanana@alphedra.com");
+                    if (nameClient != null)
+                    {
+                        return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), LaunchingBotDetails, cancellationToken);
+                    }
+
+                    promptMessageRessource = "Vous n'êtes pas autorisé à lancer un robot";
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
+
+                    break;
+
 
                 case ChatBotLaunching.Intent.Aide:
                     // We haven't implemented the GetWeatherDialog so we just display a TODO message.
@@ -132,8 +156,18 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                         DeviceRobot = luisResult.FromEntities.Airport,
                         StatutRobot = luisResult.TravelDate,
                     };
-                    return await stepContext.BeginDialogAsync(nameof(InfoDialog), InfoBotDetails, cancellationToken);
 
+                    nameClient=verifClient.verifUser("sergio.rafenomanana@alphedra.com");
+                    if (nameClient!=null)
+                    {
+                        return await stepContext.BeginDialogAsync(nameof(InfoDialog), InfoBotDetails, cancellationToken);
+                    }
+
+                    promptMessageRessource = "Vous n'êtes pas autorisé à utiliser cette ressource";
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
+                    break;
+                    
+                    
                 default:
                     // Catch all for unhandled intents
                     var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ? (intent was {luisResult.TopIntent().intent})";
@@ -239,8 +273,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             if (tokenResponse != null)
             {
                 await OAuthHelpers.ListMeAsync(stepContext.Context, tokenResponse);
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("You are now logged in."), cancellationToken);
-                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("Would you like to do? (type 'me', or 'email')") }, cancellationToken);
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text("Vous êtes actuellement connecté"), cancellationToken);
+                //return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("Would you like to do? (type 'me', or 'email')") }, cancellationToken);
             }
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text("Login was not successful please try again."), cancellationToken);
@@ -285,6 +319,13 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             }
 
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+        }
+
+        private static async Task<User> GetUserAsync(TokenResponse tokenResponse)
+        {
+            // Pull in the data from the Microsoft Graph.
+            var client = new SimpleGraphClient(tokenResponse.Token);
+            return await client.GetMeAsync();
         }
     }
 }

@@ -117,7 +117,10 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             if (InfoBotDetails.RobotName != null)
             {
                 string myRobot = InfoBotDetails.RobotName;
-                var infoRobotMessageText = getData(myRobot);
+                //var infoRobotMessageText = getData(myRobot);
+
+                ChatBotLaunching SqlChatbot = new ChatBotLaunching();
+                var infoRobotMessageText= SqlChatbot.getData(myRobot,702);
                 var infoRobotMessage = MessageFactory.Text(infoRobotMessageText, infoRobotMessageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
             }
@@ -131,49 +134,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             return !timexProperty.Types.Contains(Constants.TimexTypes.Definite);
         }
 
-        public string getData(string robot)
-        {
-            string robotName, robotDevice,robotstatut,robotdescription,result;
-            result = "init";
-            try
-            {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = "212.114.16.130";
-                builder.UserID = "chatbotdev";
-                builder.Password = "384E7nV#2!mPzA";
-                builder.InitialCatalog = "ALPHEDRA_DB";
-
-                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-                {
-                    String sql = "select A.ID_Robot,B.Robot,A.Device,A.Statut,A.Desciption from [ALPHEDRA_DB].[dbo].[Chatbot_Historique_Des_Taches] as A inner join [ALPHEDRA_DB].[dbo].[Chatbot_Robot] as B on A.ID_Robot=B.ID_Robot where B.Robot=@Robot";
-
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        connection.Open();
-                        command.Parameters.AddWithValue("@Robot", robot);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
-                                robotName = reader.GetString(1);
-                                robotDevice = reader.GetString(2);
-                                robotstatut = reader.GetString(3);
-                                robotdescription = reader.GetString(4);
-                                result = "Voici les informations que vous avez demandé :\r\n Nom:" + robotName + " ,\r\n lancé sur le device " + robotDevice + ",\r\n son statut:"+robotstatut+ ",\r\n description:" + robotdescription;
-
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException e)
-            {
-                result = e.ToString();
-            }
-            return result;
-        }
+        
     }
 }
 
