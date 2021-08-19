@@ -18,9 +18,11 @@ namespace Microsoft.BotBuilderSamples.Dialogs
     {
         private const string ConfirmrRequestStepMsgText = "Voulez vous vraiment une information sur un robot? (Taper oui ou non)";
         private const string RobotNameStepMsgText = "Quel est le nom du robot dont vous voulez avoir une information ?";
-        private const string ConfirmrRequestSecondMsgText = "Voulez vous avoir des informations par rapport à un robot en particulier?";
+        private const string ConfirmrRequestSecondMsgText = "Voulez vous avoir des informations par rapport à un robot en particulier?(Taper oui ou non)";
         // private const string RobotDeviceStepMsgText = "Sur quel ordinateur le robot est il lancé?";
         private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
+        public  int idClient = 1706;
+        public ChatBotLaunching SqlChatbot = new ChatBotLaunching();
 
 
         public InfoDialog()
@@ -62,8 +64,10 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             if (InfoBotDetails.ConfirmationFirstInfo == "oui")
             {
-                ChatBotLaunching SqlChatbot = new ChatBotLaunching();
-                var infoRobotMessageText = SqlChatbot.allBotClient("1706");
+                SqlChatbot = new ChatBotLaunching();
+                idClient = SqlChatbot.companyId(InfoBotDetails.mailClient);
+
+                var infoRobotMessageText = SqlChatbot.allBotClient(idClient.ToString());
 
                 string strVoici = "Voici la liste de vos robots";
                 var infoRobotAllMessage = MessageFactory.Text(strVoici, strVoici, InputHints.IgnoringInput);
@@ -74,7 +78,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                     var infoRobotMessage = MessageFactory.Text(a.ToString(), a.ToString(), InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
                 }
-
             }
             else if (InfoBotDetails.ConfirmationFirstInfo == "non")
             {
@@ -171,8 +174,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 string myRobot = InfoBotDetails.RobotName;
                 //var infoRobotMessageText = getData(myRobot);
 
-                ChatBotLaunching SqlChatbot = new ChatBotLaunching();
-                var infoRobotMessageText= SqlChatbot.getData(myRobot,702);
+                
+                var infoRobotMessageText= SqlChatbot.getData(myRobot, idClient.ToString());
                 var infoRobotMessage = MessageFactory.Text(infoRobotMessageText, infoRobotMessageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
             }

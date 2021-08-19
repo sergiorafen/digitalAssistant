@@ -23,6 +23,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         private readonly ChatbotRecognizer _luisRecognizer;
         protected readonly ILogger Logger;
         public ChatBotLaunching chatBotADO = new ChatBotLaunching();
+        public TokenResponse tokenResponse;
+        public InfoBotDetails InfoBotDetails;
 
 
         // Dependency injection uses this constructor to instantiate MainDialog
@@ -73,7 +75,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             }
 
             //Check token
-            var tokenResponse = (TokenResponse)stepContext.Result;
+             tokenResponse  = (TokenResponse)stepContext.Result;
 
             if (tokenResponse != null)
             {
@@ -129,6 +131,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                             RobotName = luisResult.ToEntities.Airport,
                             RequeteClient = luisResult.FromEntities.Airport,
                             DateDemande = luisResult.TravelDate,
+                            mailClient = emailUser,
                         };
 
                         // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
@@ -158,12 +161,14 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                         var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
 
                         await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);*/
-                        var InfoBotDetails = new InfoBotDetails()
+                        InfoBotDetails = new InfoBotDetails()
                         {
                             // Get RobotName and RequeteClient from the composite entities arrays.
                             RobotName = luisResult.ToEntities.Airport,
                             DeviceRobot = luisResult.FromEntities.Airport,
                             StatutRobot = luisResult.TravelDate,
+                            tokenResponseUser = tokenResponse,
+                            mailClient = emailUser,
                         };
 
                         //nameClient=chatBotADO.verifUser("sergio.enomanana@alphedra.com");
@@ -235,7 +240,14 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 var messageText = $"Votre demande de lancer le robot  {result.RobotName} \r\n a bien été enregistré";
                 var message = MessageFactory.Text(messageText, messageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(message, cancellationToken);
-                chatBotADO.InsertData(result.RobotName,"Alphedra");
+
+                var client = new SimpleGraphClient(tokenResponse.Token);
+                await client.GetMeAsync();
+                User tmpUSer = await client.GetMeAsync();
+
+                string ncompanyUser = chatBotADO.companyName(tmpUSer.Mail);
+
+                chatBotADO.InsertData(result.RobotName, ncompanyUser);
             }
 
             // Restart the main dialog with a different message the second time around

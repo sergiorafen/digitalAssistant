@@ -148,6 +148,89 @@ namespace Microsoft.BotBuilderSamples
             return idCLient;
         }
 
+        public string companyName(string email)
+        {
+            string nameClient = "string";
+            string error;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(GetConnectionString()))
+                {
+                    String sql = "SELECT ID_Client,Droit,Client FROM[ALPHEDRA_DB].[dbo].[Chatbot_User] WHERE email = @emailU";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        connection.Open();
+                        command.Parameters.AddWithValue("@emailU", email);
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
+                                /*idCLient = int.Parse(reader.GetString(0));
+                                droitUser = int.Parse(reader.GetString(1));*/
+                                nameClient = reader.GetString(2);
+                            }
+                            else
+                            {
+                                nameClient = null;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                error = e.ToString();
+                nameClient = null;
+            }
+
+
+            return nameClient;
+        }
+
+        public int companyId(string email)
+        {
+            int idClient, test;
+            string error;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(GetConnectionString()))
+                {
+                    String sql = "SELECT ID_Client,Droit,Client FROM[ALPHEDRA_DB].[dbo].[Chatbot_User] WHERE email = @emailU";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        connection.Open();
+                        command.Parameters.AddWithValue("@emailU", email);
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
+                                /*idCLient = int.Parse(reader.GetString(0));
+                                droitUser = int.Parse(reader.GetString(1));*/
+                                idClient = reader.GetInt32(0);
+                            }
+                            else
+                            {
+                                idClient = 1;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                error = e.ToString();
+                idClient = 1;
+            }
+
+            return idClient;
+        }
+
         public List<String> allBotClient(string clientID)
         {
             string robotName;
@@ -180,7 +263,7 @@ namespace Microsoft.BotBuilderSamples
             }
             return ListRobotName;
         }
-        public string getData(string robot ,int clientID)
+        public string getData(string robot ,string clientID)
         {
             string robotName, robotDevice, robotstatut, robotdescription, result;
             result = "init";
@@ -225,6 +308,7 @@ namespace Microsoft.BotBuilderSamples
             return result;
         }
 
+        
         public void InsertData(string robot,string client)
         {
             string result = "init";

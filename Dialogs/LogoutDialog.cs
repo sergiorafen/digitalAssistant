@@ -48,13 +48,13 @@ namespace Microsoft.BotBuilderSamples
             {
                 var text = innerDc.Context.Activity.Text.Trim().ToLowerInvariant();
 
-                if (text == "logout")
+                if (text == "déconnexion")
                 {
                     // The UserTokenClient encapsulates the authentication processes.
                     var userTokenClient = innerDc.Context.TurnState.Get<UserTokenClient>();
                     await userTokenClient.SignOutUserAsync(innerDc.Context.Activity.From.Id, ConnectionName, innerDc.Context.Activity.ChannelId, cancellationToken).ConfigureAwait(false);
 
-                    await innerDc.Context.SendActivityAsync(MessageFactory.Text("You have been signed out."), cancellationToken);
+                    await innerDc.Context.SendActivityAsync(MessageFactory.Text("Vous avez été déconnecté. \r\n Heureux de vous avoir aidé. \r\n A bientôt."), cancellationToken);
                     return await innerDc.CancelAllDialogsAsync();
                 }
             }

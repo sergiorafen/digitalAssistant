@@ -20,6 +20,7 @@ namespace Microsoft.BotBuilderSamples
         {
             var user = await GetUserAsync(turnContext, tokenResponse);
             await turnContext.SendActivityAsync($"Connecté en tant que {user.DisplayName}.");
+            await turnContext.SendActivityAsync($"Taper déconnexion si vous voulez vous déconnecter");
         }
 
         // Send the user their Graph Email Address from the bot.

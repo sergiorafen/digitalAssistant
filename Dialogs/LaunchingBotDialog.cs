@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
@@ -12,11 +14,14 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class LaunchingBotDialog : CancelAndHelpDialog
     {
-        private const string ConfirmFirstStepMsgText = "Voulez vous vraiment lancer un robot? "; 
-        private const string ConfirmrRequestSecondMsgText = "Voulez vous que j'exécute un robot en particulier ?";
+        private const string ConfirmFirstStepMsgText = "Voulez vous vraiment lancer un robot?(Taper oui ou non) "; 
+        private const string ConfirmrRequestSecondMsgText = "Voulez vous que j'exécute un robot en particulier ?(Taper oui ou non)";
         private const string RequeteClientStepMsgText = "Quel robot voulez vous que j'exécute ?";
         private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
         private const string DeviceRobotMessageText = "Sur quel ordinateur voulez vous le lancer?";
+        public ChatBotLaunching SqlChatbot = new ChatBotLaunching();
+        public int idClient = 1706;
+        public List<String>  ListRobotName = new List<String>();
 
         public LaunchingBotDialog()
             : base(nameof(LaunchingBotDialog))
@@ -55,16 +60,19 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
             LaunchingBotDetails.ConfirmationFirstInfo = (string)stepContext.Result;
 
+            SqlChatbot = new ChatBotLaunching();
+            idClient = SqlChatbot.companyId(LaunchingBotDetails.mailClient);
+
             if (LaunchingBotDetails.ConfirmationFirstInfo == "oui")
             {
                 ChatBotLaunching SqlChatbot = new ChatBotLaunching();
-                var infoRobotMessageText = SqlChatbot.allBotClient("1706");
+                ListRobotName = SqlChatbot.allBotClient(idClient.ToString());
 
                 string strVoici = "Avant de lancer un robot en particulier ,voici la liste de vos robots";
                 var infoRobotAllMessage = MessageFactory.Text(strVoici, strVoici, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(infoRobotAllMessage, cancellationToken);
 
-                foreach (var a in infoRobotMessageText)
+                foreach (var a in ListRobotName)
                 {
                     var infoRobotMessage = MessageFactory.Text(a.ToString(), a.ToString(), InputHints.IgnoringInput);
                     await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
@@ -158,13 +166,25 @@ namespace Microsoft.BotBuilderSamples.Dialogs
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
-
             LaunchingBotDetails.RobotName = (string)stepContext.Result;
 
-            var messageText = $"Pouvez vous confirmer votre demande ?: \r\n lancer le robot: {LaunchingBotDetails.RobotName}. Est ce correct?";
-            var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+            
+                if (ListRobotName.Contains(LaunchingBotDetails.RobotName))
+                {
+                    var messageText = $"Pouvez vous confirmer votre demande ?: \r\n lancer le robot: {LaunchingBotDetails.RobotName}. Est ce correct?";
+                    var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                    return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                }
+                else {
+
+                    var didntUnderstandMessageText = $"Le robot  " + LaunchingBotDetails.RobotName + "a été soit mal écrit soit n'existe pas en base de données";
+                    var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+            } 
+
+            return await stepContext.EndDialogAsync(null, cancellationToken);
+
         }
 
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
