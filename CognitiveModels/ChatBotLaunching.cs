@@ -108,7 +108,7 @@ namespace Microsoft.BotBuilderSamples
         public string verifUser(string email)
         {
             string nameClient="string";
-            int idCLient,droitUser;
+            string idCLient,droitUser;
             string error;
 
             try
@@ -128,11 +128,11 @@ namespace Microsoft.BotBuilderSamples
                                 //Console.WriteLine("{0} {1} {2} {3}", reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
                                 /*idCLient = int.Parse(reader.GetString(0));
                                 droitUser = int.Parse(reader.GetString(1));*/
-                                nameClient = reader.GetString(2);
+                                idCLient = reader.GetString(2);
                             }
                             else
                             {
-                                nameClient =null;
+                                idCLient = null;
                             }
                         }
                     }
@@ -141,13 +141,45 @@ namespace Microsoft.BotBuilderSamples
             catch (SqlException e)
             {
                 error = e.ToString();
-                nameClient = null;
+                idCLient = null;
             }
 
 
-            return nameClient;
+            return idCLient;
         }
 
+        public List<String> allBotClient(string clientID)
+        {
+            string robotName;
+            string result = "init";
+            var ListRobotName = new List<String>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(GetConnectionString()))
+                {
+                    String sql = "Select Distinct B.ID_Robot, B.Robot from[ALPHEDRA_DB].[dbo].[chatbot_historique_des_taches] as A   inner join[ALPHEDRA_DB].[dbo].[chatbot_robot] as B on A.ID_Robot = B.ID_Robot where A.ID_Client = @IdClient";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        connection.Open();
+                        command.Parameters.AddWithValue("@IdClient", clientID);
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                ListRobotName.Add(reader.GetString(1));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                result = e.ToString();
+            }
+            return ListRobotName;
+        }
         public string getData(string robot ,int clientID)
         {
             string robotName, robotDevice, robotstatut, robotdescription, result;
@@ -192,6 +224,34 @@ namespace Microsoft.BotBuilderSamples
 
             return result;
         }
+
+        public void InsertData(string robot,string client)
+        {
+            string result = "init";
+            DateTime now = DateTime.Now;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(GetConnectionString()))
+                {
+
+                    String sql = "insert into [ALPHEDRA_DB].[dbo].[Chatbot_Robot_Client] (Client,Robot,Date_Demande)  values (@Client,@Robot,@Date_Demande)";
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@Client", client);
+                        command.Parameters.AddWithValue("@Robot", robot);
+                        command.Parameters.AddWithValue("@Date_Demande", now);
+                        connection.Open();
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (SqlException e)
+            {
+                result = e.ToString();
+            }
+        }
+
 
         public string GetConnectionString()
         {

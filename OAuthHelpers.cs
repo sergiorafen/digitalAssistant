@@ -29,6 +29,12 @@ namespace Microsoft.BotBuilderSamples
             await turnContext.SendActivityAsync($"Your email: {user.Mail}.");
         }
 
+        public static async Task ListMeAsyncSRA(ITurnContext turnContext, TokenResponse tokenResponse)
+        {
+            var user = await GetUserAsync(turnContext, tokenResponse);
+            await turnContext.SendActivityAsync(user.Mail);
+        }
+
         private static async Task<User> GetUserAsync(ITurnContext turnContext, TokenResponse tokenResponse)
         {
             if (turnContext == null)

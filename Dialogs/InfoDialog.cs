@@ -17,8 +17,9 @@ namespace Microsoft.BotBuilderSamples.Dialogs
     public class InfoDialog : CancelAndHelpDialog
     {
         private const string ConfirmrRequestStepMsgText = "Voulez vous vraiment une information sur un robot? (Taper oui ou non)";
-        private const string RobotNameStepMsgText = "Quel est le nom du robot dont vous voulez avoir des informations ?";
-        private const string RobotDeviceStepMsgText = "Sur quel ordinateur le robot est il lancé?";
+        private const string RobotNameStepMsgText = "Quel est le nom du robot dont vous voulez avoir une information ?";
+        private const string ConfirmrRequestSecondMsgText = "Voulez vous avoir des informations par rapport à un robot en particulier?";
+        // private const string RobotDeviceStepMsgText = "Sur quel ordinateur le robot est il lancé?";
         private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
 
 
@@ -30,7 +31,9 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             AddDialog(new DateResolverDialog());*/
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
-                ConfirmInfoStepAsync,
+                ConfirmFirstInfoStepAsync,
+                AllClientBotInfoStepAsync,
+                ConfirmSecondInfoStepAsync,
                 RobotNameStepAsync,
                 FinalStepAsync,
             }));
@@ -39,13 +42,62 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             InitialDialogId = nameof(WaterfallDialog);
         }
 
-        private async Task<DialogTurnResult> ConfirmInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> ConfirmFirstInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var InfoBotDetails = (InfoBotDetails)stepContext.Options;
 
             if (InfoBotDetails.ConfirmationFirstInfo== null)
             {
                 var promptMessage = MessageFactory.Text(ConfirmrRequestStepMsgText, ConfirmrRequestStepMsgText, InputHints.ExpectingInput);
+                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+            }
+
+            return await stepContext.NextAsync(InfoBotDetails.ConfirmationFirstInfo, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> AllClientBotInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var InfoBotDetails = (InfoBotDetails)stepContext.Options;
+            InfoBotDetails.ConfirmationFirstInfo = (string)stepContext.Result;
+
+            if (InfoBotDetails.ConfirmationFirstInfo == "oui")
+            {
+                ChatBotLaunching SqlChatbot = new ChatBotLaunching();
+                var infoRobotMessageText = SqlChatbot.allBotClient("1706");
+
+                string strVoici = "Voici la liste de vos robots";
+                var infoRobotAllMessage = MessageFactory.Text(strVoici, strVoici, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(infoRobotAllMessage, cancellationToken);
+
+                foreach (var a in infoRobotMessageText)
+                {
+                    var infoRobotMessage = MessageFactory.Text(a.ToString(), a.ToString(), InputHints.IgnoringInput);
+                    await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
+                }
+
+            }
+            else if (InfoBotDetails.ConfirmationFirstInfo == "non")
+            {
+                return await stepContext.EndDialogAsync();
+            }
+            else
+            {
+                var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+
+                return await stepContext.EndDialogAsync();
+            }
+
+            return await stepContext.NextAsync(InfoBotDetails.ConfirmationFirstInfo, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> ConfirmSecondInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var InfoBotDetails = (InfoBotDetails)stepContext.Options;
+
+            if (InfoBotDetails.ConfirmationSecondInfo == null)
+            {
+                var promptMessage = MessageFactory.Text(ConfirmrRequestSecondMsgText, ConfirmrRequestSecondMsgText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
             }
 

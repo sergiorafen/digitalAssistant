@@ -22,6 +22,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
     {
         private readonly ChatbotRecognizer _luisRecognizer;
         protected readonly ILogger Logger;
+        public ChatBotLaunching chatBotADO = new ChatBotLaunching();
+
 
         // Dependency injection uses this constructor to instantiate MainDialog
         public MainDialog(ChatbotRecognizer luisRecognizer, LaunchingBotDialog bookingDialog, InfoDialog informationDialog , IConfiguration configuration,ILogger<MainDialog> logger)
@@ -51,6 +53,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             {
                 PromptStepAsync,
                 IntroStepAsync,
+                CommandStepAsync,
                 ActStepAsync,
                 FinalStepAsync,
             }));
@@ -101,79 +104,89 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
             // Call LUIS and gather any potential booking details. (Note the TurnContext has the response to the prompt.)
             var luisResult = await _luisRecognizer.RecognizeAsync<ChatBotLaunching>(stepContext.Context, cancellationToken);
-            ChatBotLaunching verifClient = new ChatBotLaunching();
-            string nameClient = "nameClient";
+            string emailClient = "emailClient";
             string promptMessageRessource = "promptMessageRessource";
 
+            var tokenResponse = stepContext.Result as TokenResponse;
+            var client = new SimpleGraphClient(tokenResponse.Token);
+             await client.GetMeAsync();
+            User tmpUSer = await client.GetMeAsync();
+            string emailUser = tmpUSer.Mail;
 
-            switch (luisResult.TopIntent().intent)
+            emailClient = chatBotADO.verifUser(emailUser);
+
+            if (emailClient != null)
             {
-                case ChatBotLaunching.Intent.Todorobot:
-                    await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
+                switch (luisResult.TopIntent().intent)
+                {
+                    case ChatBotLaunching.Intent.Todorobot:
+                        await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
+
+                        // Initialize LaunchingBotDetails with any entities we may have found in the response.
+                        var LaunchingBotDetails = new LaunchingBotDetails()
+                        {
+                            // Get RobotName and RequeteClient from the composite entities arrays.
+                            RobotName = luisResult.ToEntities.Airport,
+                            RequeteClient = luisResult.FromEntities.Airport,
+                            DateDemande = luisResult.TravelDate,
+                        };
+
+                        // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
+                        //nameClient = chatBotADO.verifUser(emailUser);
+                        if (emailClient != null)
+                        {
+                            return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), LaunchingBotDetails, cancellationToken);
+                        }
+
+                        promptMessageRessource = "Vous n'êtes pas autorisé à lancer un robot";
+                        await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
+
+                        break;
 
 
+                    case ChatBotLaunching.Intent.Aide:
+                        // We haven't implemented the GetWeatherDialog so we just display a TODO message.
+                        var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra viendra pour vous aider dans les plus brefs délais ,\r\n , Vous pouvez également nous contacter par email : email@alphedra.com, ou par téléphone au + 33 (0) 6 27 12 36 64  ";
+                        var getWeatherMessage = MessageFactory.Text(getWeatherMessageText, getWeatherMessageText, InputHints.IgnoringInput);
+                        await stepContext.Context.SendActivityAsync(getWeatherMessage, cancellationToken);
+                        break;
 
-                    // Initialize LaunchingBotDetails with any entities we may have found in the response.
-                    var LaunchingBotDetails = new LaunchingBotDetails()
-                    {
-                        // Get RobotName and RequeteClient from the composite entities arrays.
-                        RobotName = luisResult.ToEntities.Airport,
-                        RequeteClient = luisResult.FromEntities.Airport,
-                        DateDemande = luisResult.TravelDate,
-                    };
+                    case ChatBotLaunching.Intent.Information:
+                        await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
 
-                    // Run the BookingDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
-                    nameClient = verifClient.verifUser("sergio.rafenomanana@alphedra.com");
-                    if (nameClient != null)
-                    {
-                        return await stepContext.BeginDialogAsync(nameof(LaunchingBotDialog), LaunchingBotDetails, cancellationToken);
-                    }
+                        /*var getInformationMessageText = getData("Clartan VNI66");
+                        var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
 
-                    promptMessageRessource = "Vous n'êtes pas autorisé à lancer un robot";
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
+                        await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);*/
+                        var InfoBotDetails = new InfoBotDetails()
+                        {
+                            // Get RobotName and RequeteClient from the composite entities arrays.
+                            RobotName = luisResult.ToEntities.Airport,
+                            DeviceRobot = luisResult.FromEntities.Airport,
+                            StatutRobot = luisResult.TravelDate,
+                        };
 
-                    break;
+                        //nameClient=chatBotADO.verifUser("sergio.enomanana@alphedra.com");
+                        if (emailClient != null)
+                        {
+                            return await stepContext.BeginDialogAsync(nameof(InfoDialog), InfoBotDetails, cancellationToken);
+                        }
 
+                        promptMessageRessource = "Vous n'êtes pas autorisé à utiliser cette ressource";
+                        await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
+                        break;
 
-                case ChatBotLaunching.Intent.Aide:
-                    // We haven't implemented the GetWeatherDialog so we just display a TODO message.
-                    var getWeatherMessageText = "Votre demande a bien été prise en compte un consultant Alphedra viendra pour vous aider dans les plus brefs délais ,\r\n , Vous pouvez également nous contacter par email : email@alphedra.com, ou par téléphone au + 33 (0) 6 27 12 36 64  ";
-                    var getWeatherMessage = MessageFactory.Text(getWeatherMessageText, getWeatherMessageText, InputHints.IgnoringInput);
-                    await stepContext.Context.SendActivityAsync(getWeatherMessage, cancellationToken);
-                    break;
-
-                case ChatBotLaunching.Intent.Information:
-                    await ShowWarningForUnsupportedCities(stepContext.Context, luisResult, cancellationToken);
-
-                    /*var getInformationMessageText = getData("Clartan VNI66");
-                    var getInformationMessage = MessageFactory.Text(getInformationMessageText, getInformationMessageText, InputHints.IgnoringInput);
-
-                    await stepContext.Context.SendActivityAsync(getInformationMessage, cancellationToken);*/
-                    var InfoBotDetails = new InfoBotDetails()
-                    {
-                        // Get RobotName and RequeteClient from the composite entities arrays.
-                        RobotName = luisResult.ToEntities.Airport,
-                        DeviceRobot = luisResult.FromEntities.Airport,
-                        StatutRobot = luisResult.TravelDate,
-                    };
-
-                    nameClient=verifClient.verifUser("sergio.rafenomanana@alphedra.com");
-                    if (nameClient!=null)
-                    {
-                        return await stepContext.BeginDialogAsync(nameof(InfoDialog), InfoBotDetails, cancellationToken);
-                    }
-
-                    promptMessageRessource = "Vous n'êtes pas autorisé à utiliser cette ressource";
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(promptMessageRessource), cancellationToken);
-                    break;
-                    
-                    
-                default:
-                    // Catch all for unhandled intents
-                    var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
-                    var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
-                    await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
-                    break;
+                    default:
+                        // Catch all for unhandled intents
+                        var didntUnderstandMessageText = $"Désolé je n'ai pas compris.\r\nPourriez vous reformuler votre demande ?";
+                        var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                        await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+                        break;
+                }
+            }
+            else {
+                promptMessageRessource = "Vous n'êtes pas autorisé à utiliser ce chatbot . \r\nVous pouvez également nous contacter par email : email@alphedra.com, ou par téléphone au + 33 (0) 6 27 12 36 64";
+                await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessageRessource, cancellationToken);
             }
 
             return await stepContext.NextAsync(null, cancellationToken);
@@ -222,7 +235,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
                 var messageText = $"Votre demande de lancer le robot  {result.RobotName} \r\n a bien été enregistré";
                 var message = MessageFactory.Text(messageText, messageText, InputHints.IgnoringInput);
                 await stepContext.Context.SendActivityAsync(message, cancellationToken);
-                InsertData(result.RobotName);
+                chatBotADO.InsertData(result.RobotName,"Alphedra");
             }
 
             // Restart the main dialog with a different message the second time around
@@ -230,38 +243,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             return await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessage, cancellationToken);
         }
 
-        public void InsertData(string robot)
-        {
-            string result = "init";
-            DateTime now = DateTime.Now;
-            try
-            {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = "212.114.16.130";
-                builder.UserID = "chatbotdev";
-                builder.Password = "384E7nV#2!mPzA";
-                builder.InitialCatalog = "ALPHEDRA_DB";
+        
 
-                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-                {
-
-                    String sql = "insert into [ALPHEDRA_DB].[dbo].[Chatbot_Robot_Client] (Client,Robot,Date_Demande)  values (@Client,@Robot,@Date_Demande)";
-
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        command.Parameters.AddWithValue("@Client", "Clartan");
-                        command.Parameters.AddWithValue("@Robot", robot);
-                        command.Parameters.AddWithValue("@Date_Demande", now);
-                        connection.Open();
-                        command.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (SqlException e)
-            {
-                result = e.ToString();
-            }
-        }
         private async Task<DialogTurnResult> PromptStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             return await stepContext.BeginDialogAsync(nameof(OAuthPrompt), null, cancellationToken);
@@ -283,7 +266,6 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 
         private async Task<DialogTurnResult> CommandStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            stepContext.Values["command"] = stepContext.Result;
             return await stepContext.BeginDialogAsync(nameof(OAuthPrompt), null, cancellationToken);
         }
 
@@ -321,11 +303,5 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
 
-        private static async Task<User> GetUserAsync(TokenResponse tokenResponse)
-        {
-            // Pull in the data from the Microsoft Graph.
-            var client = new SimpleGraphClient(tokenResponse.Token);
-            return await client.GetMeAsync();
-        }
     }
 }

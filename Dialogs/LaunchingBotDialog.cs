@@ -12,7 +12,8 @@ namespace Microsoft.BotBuilderSamples.Dialogs
 {
     public class LaunchingBotDialog : CancelAndHelpDialog
     {
-        private const string ConfirmFirstStepMsgText = "Voulez vous vraiment lancer un robot? ";
+        private const string ConfirmFirstStepMsgText = "Voulez vous vraiment lancer un robot? "; 
+        private const string ConfirmrRequestSecondMsgText = "Voulez vous que j'exécute un robot en particulier ?";
         private const string RequeteClientStepMsgText = "Quel robot voulez vous que j'exécute ?";
         private const string didntUnderstandMessageText = "Désolé je n'ai pas compris.\r\nPourriez vous reformler votre demande ?";
         private const string DeviceRobotMessageText = "Sur quel ordinateur voulez vous le lancer?";
@@ -26,6 +27,7 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
                 ConfirmFirstStepAsync,
+                AllClientBotInfoStepAsync,
                 RequeteClientStepAsync,
                 ConfirmStepAsync,
                 FinalStepAsync,
@@ -46,6 +48,54 @@ namespace Microsoft.BotBuilderSamples.Dialogs
             }
 
             return await stepContext.NextAsync(LaunchingBotDetails.RobotName, cancellationToken);
+        }
+
+        private async Task<DialogTurnResult> AllClientBotInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
+            LaunchingBotDetails.ConfirmationFirstInfo = (string)stepContext.Result;
+
+            if (LaunchingBotDetails.ConfirmationFirstInfo == "oui")
+            {
+                ChatBotLaunching SqlChatbot = new ChatBotLaunching();
+                var infoRobotMessageText = SqlChatbot.allBotClient("1706");
+
+                string strVoici = "Avant de lancer un robot en particulier ,voici la liste de vos robots";
+                var infoRobotAllMessage = MessageFactory.Text(strVoici, strVoici, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(infoRobotAllMessage, cancellationToken);
+
+                foreach (var a in infoRobotMessageText)
+                {
+                    var infoRobotMessage = MessageFactory.Text(a.ToString(), a.ToString(), InputHints.IgnoringInput);
+                    await stepContext.Context.SendActivityAsync(infoRobotMessage, cancellationToken);
+                }
+
+            }
+            else if (LaunchingBotDetails.ConfirmationFirstInfo == "non")
+            {
+                return await stepContext.EndDialogAsync();
+            }
+            else
+            {
+                var didntUnderstandMessage = MessageFactory.Text(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                await stepContext.Context.SendActivityAsync(didntUnderstandMessage, cancellationToken);
+
+                return await stepContext.EndDialogAsync();
+            }
+
+            return await stepContext.NextAsync(LaunchingBotDetails.ConfirmationFirstInfo, cancellationToken);
+        }
+        private async Task<DialogTurnResult> ConfirmSecondInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var LaunchingBotDetails = (LaunchingBotDetails)stepContext.Options;
+
+            if (LaunchingBotDetails.ConfirmationSecondInfo == null)
+            {
+                var promptMessage = MessageFactory.Text(ConfirmrRequestSecondMsgText, ConfirmrRequestSecondMsgText, InputHints.ExpectingInput);
+                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+            }
+
+            return await stepContext.NextAsync(LaunchingBotDetails.ConfirmationFirstInfo, cancellationToken);
         }
 
         private async Task<DialogTurnResult> RequeteClientStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)

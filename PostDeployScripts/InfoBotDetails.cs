@@ -8,6 +8,7 @@ namespace Microsoft.BotBuilderSamples
         public string StatutRobot { get; set; }
 
         public string ConfirmationFirstInfo { get; set; }
+        public string ConfirmationSecondInfo { get; set; }
 
     }
 }
