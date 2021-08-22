@@ -5,6 +5,8 @@ using System;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.Graph;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.BotBuilderSamples
 {
@@ -24,12 +26,73 @@ namespace Microsoft.BotBuilderSamples
             _token = token;
         }
 
+        public async Task SendMailAsync(string toAddress, string subject, string content)
+        {
+            if (string.IsNullOrWhiteSpace(toAddress))
+            {
+                throw new ArgumentNullException(nameof(toAddress));
+            }
+
+            if (string.IsNullOrWhiteSpace(subject))
+            {
+                throw new ArgumentNullException(nameof(subject));
+            }
+
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            var graphClient = GetAuthenticatedClient();
+            var recipients = new List<Recipient>
+            {
+                new Recipient
+                {
+                    EmailAddress = new EmailAddress
+                    {
+                        Address = toAddress,
+                    },
+                },
+            };
+
+            // Create the message.
+            var email = new Message
+            {
+                Body = new ItemBody
+                {
+                    Content = content,
+                    ContentType = BodyType.Text,
+                },
+                Subject = subject,
+                ToRecipients = recipients,
+            };
+
+            // Send the message.
+            await graphClient.Me.SendMail(email, true).Request().PostAsync();
+        }
+
+        // Gets mail for the user using the Microsoft Graph API
+        public async Task<Message[]> GetRecentMailAsync()
+        {
+            var graphClient = GetAuthenticatedClient();
+            var messages = await graphClient.Me.MailFolders.Inbox.Messages.Request().GetAsync();
+            return messages.Take(5).ToArray();
+        }
+
         // Get information about the user.
         public async Task<User> GetMeAsync()
         {
             var graphClient = GetAuthenticatedClient();
             var me = await graphClient.Me.Request().GetAsync();
             return me;
+        }
+
+        // gets information about the user's manager.
+        public async Task<User> GetManagerAsync()
+        {
+            var graphClient = GetAuthenticatedClient();
+            var manager = await graphClient.Me.Manager.Request().GetAsync() as User;
+            return manager;
         }
 
         // Get an Authenticated Microsoft Graph client using the token issued to the user.
